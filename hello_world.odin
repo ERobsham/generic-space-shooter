@@ -40,7 +40,6 @@ main :: proc() {
         mouse_x := i32(mX)
         mouse_y := i32(mY)
 
-
         // process events
         move_vec : Vec2
         if !sdl2.PollEvent(&event) {
@@ -55,10 +54,6 @@ main :: proc() {
                 
                 case MOUSEBUTTONDOWN, MOUSEBUTTONUP:
                     fmt.println("mouse event: ", event.button)
-                    if event.type == MOUSEBUTTONUP &&
-                        event.button.button == 3 {
-                        ClearRender(renderer)
-                    }
                     
                 case sdl2.EventType.QUIT:
                     fmt.println("exit event")
@@ -66,13 +61,12 @@ main :: proc() {
             }
         }
         
+        ClearRender(renderer)
+        
         // process game step
-        
+
         // render the things
-        sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
-        
-        rect := sdl2.Rect{mouse_x-50, mouse_y-50, 100, 100}
-        sdl2.RenderDrawRect(renderer, &rect)
+        DrawRect(renderer, mouse_x, mouse_y)
 
         sdl2.RenderPresent(renderer)
 
@@ -80,7 +74,16 @@ main :: proc() {
     }
 }
 
+DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
+    sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
+    
+    rect := sdl2.Rect{x-10, y-10, 20, 20}
+    sdl2.RenderDrawRect(renderer, &rect)
+    
+    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
+}
+
 ClearRender :: proc(renderer: ^sdl2.Renderer) {
     sdl2.RenderClear(renderer)
-    sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
+    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
 }
