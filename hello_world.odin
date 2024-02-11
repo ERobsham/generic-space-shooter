@@ -5,19 +5,13 @@ import "core:fmt"
 import "vendor:sdl2"
 import "vendor:sdl2/image"
 
-W_TITLE    :: "Hello World"
-W_ORIGIN_X :: sdl2.WINDOWPOS_CENTERED
-W_ORIGIN_Y :: sdl2.WINDOWPOS_CENTERED
-W_WIDTH    :: 1024
-W_HEIGHT   :: 768
-W_FLAGS    :: (sdl2.WINDOW_INPUT_FOCUS|sdl2.WINDOW_MOUSE_FOCUS)
+import "lib/collision"
+import "lib/deltaT"
+
+import "space_shooter"
+import "space_shooter/input"
 
 R_FLAGS :: (sdl2.RENDERER_ACCELERATED | sdl2.RENDERER_PRESENTVSYNC)
-
-WindowBB := BoundingBox {
-    0,0,
-    W_WIDTH, W_HEIGHT,
-}
 
 main :: proc() {
 
@@ -27,7 +21,14 @@ main :: proc() {
     image.Init(image.INIT_PNG)
     defer image.Quit()
     
-    window := sdl2.CreateWindow(W_TITLE, W_ORIGIN_X, W_ORIGIN_Y, W_WIDTH, W_HEIGHT, W_FLAGS)
+    window := sdl2.CreateWindow(
+        space_shooter.W_TITLE, 
+        space_shooter.W_ORIGIN_X, 
+        space_shooter.W_ORIGIN_Y, 
+        space_shooter.W_WIDTH, 
+        space_shooter.W_HEIGHT, 
+        space_shooter.W_FLAGS,
+    )
     assert(window != nil, "cannot create window")
     defer sdl2.DestroyWindow(window)
 
@@ -35,77 +36,66 @@ main :: proc() {
     assert(renderer != nil, "cannit get renderer")
     defer sdl2.DestroyRenderer(renderer)
 
-    InitSpriteSheet(renderer)
-    defer DestroySpriteSheet()
+    using space_shooter
+    game_state := InitGameState(window, renderer)
+    defer DestroyGameState(&game_state)
 
-    player := NewPlayer(renderer)
-
-    last_timestamp := sdl2.GetPerformanceCounter() / (sdl2.GetPerformanceFrequency() / 1000)
+    deltaT.Init()
 
     event: sdl2.Event
     loop: 
     for {
-
-        timestamp := sdl2.GetPerformanceCounter() / (sdl2.GetPerformanceFrequency() / 1000)
-        dt_ms := timestamp - last_timestamp
-        last_timestamp = timestamp
-
-
-        // get keyboard state
-        key_states := sdl2.GetKeyboardState(nil)
         
-        // get mouse state
-        mX, mY : c.int
-        mouse_state := sdl2.GetMouseState(&mX, &mY)
-        mouse_x := i32(mX)
-        mouse_y := i32(mY)
-
-        // process events
-        move_dir := MoveDir.Stationary
-        {
+        { // process input events
             using sdl2.EventType
-            
             sdl2.PollEvent(&event)
             #partial switch event.type {
                 case KEYDOWN, KEYUP:
-                    move_dir = GetMoveDir(key_states)
-                    player.dir = MoveVecForDir[move_dir]
-                    fmt.println("move dir: ", move_dir, "  dt: ", dt_ms)
+                    ProcessKeyboardInput(&game_state)
                 
                 // case MOUSEBUTTONDOWN, MOUSEBUTTONUP:
                 //     fmt.println("mouse event: ", event.button)
                     
-                case sdl2.EventType.QUIT:
+                case QUIT:
                     fmt.println("exit event")
                     return
             }
         }
         
-        ClearRender(renderer)
         
         // process game step
-        MovePlayer(&player, dt_ms)
+        dt := deltaT.Get()
+        UpdateGameState(&game_state, dt)
 
-        // render the things
-        DrawPlayer(&player, renderer)
-        DrawRect(renderer, mouse_x, mouse_y)
+        // draw the new state
+        ClearRender(renderer)
+        DrawGameState(&game_state, renderer)
+        
+        // for funzies to see how well mouse tracking works
+        mX, mY : c.int
+        sdl2.GetMouseState(&mX, &mY)
+        DrawRect(renderer, i32(mX), i32(mY))
 
+        // present the scene
         sdl2.RenderPresent(renderer)
 
-        // any cleanup?
+        // any cleanup
+        PostDrawCleanup(&game_state)
     }
 }
 
+ClearRender :: proc(renderer: ^sdl2.Renderer) {
+    sdl2.RenderClear(renderer)
+    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
+}
+
+
+// helper to draw rect around mouse
 DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
     sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
     
     rect := sdl2.Rect{x-10, y-10, 20, 20}
     sdl2.RenderDrawRect(renderer, &rect)
     
-    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
-}
-
-ClearRender :: proc(renderer: ^sdl2.Renderer) {
-    sdl2.RenderClear(renderer)
     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
 }

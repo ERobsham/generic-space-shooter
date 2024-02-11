@@ -1,4 +1,4 @@
-package main
+package collison
 
 BoundingBox :: struct {
     // origin

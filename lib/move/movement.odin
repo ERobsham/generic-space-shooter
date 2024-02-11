@@ -1,4 +1,4 @@
-package main
+package move
 
 import "core:math"
 
@@ -8,7 +8,7 @@ Vec2 :: struct {
     x,y : f64
 }
 
-MoveDir :: enum {
+Dir :: enum {
     Stationary,
     North,
     East,
@@ -20,7 +20,8 @@ MoveDir :: enum {
     SouthWest,
 }
 
-MoveVecForDir := [MoveDir]Vec2 {
+@(private)
+dirToMoveVecMap := [Dir]Vec2 {
     .Stationary = {  0,          0          },
     .North      = {  0,         -1          },
     .NorthEast  = { +1/SQRT2,   -1/SQRT2    },
@@ -32,3 +33,10 @@ MoveVecForDir := [MoveDir]Vec2 {
     .NorthWest  = { -1/SQRT2,   -1/SQRT2    },
 }
 
+VecFor :: proc(dir: Dir) -> Vec2 {
+    move_vec := dirToMoveVecMap[dir]
+    return Vec2{
+        move_vec.x,
+        move_vec.y,
+    }
+}

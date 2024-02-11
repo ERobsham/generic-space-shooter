@@ -1,6 +1,7 @@
-package main
+package input
 
 import "vendor:sdl2"
+import "../../lib/move"
 
 
 UP_KEYS :: []sdl2.Scancode{
@@ -20,19 +21,22 @@ LEFT_KEYS :: []sdl2.Scancode{
     sdl2.Scancode.A,
 }
 
-MovementKeys := #partial [MoveDir][]sdl2.Scancode {
+@(private)
+movementKeys := #partial [move.Dir][]sdl2.Scancode {
     .North = UP_KEYS,
     .East = RIGHT_KEYS,
     .South = DOWN_KEYS,
     .West = LEFT_KEYS,
 }
 
-GetMoveDir :: proc(keyboard_state : [^]u8) -> MoveDir {
+// expects the result of 'sdl2.GetKeyboardState(..)' as its argument
+GetMoveDir :: proc(keyboard_state : [^]u8) -> move.Dir {
+    using move
+    
     up_down := 0
     left_right := 0
-    
-    for keys, dir in MovementKeys {
-        dir_vec := MoveVecForDir[dir]
+    for keys, dir in movementKeys {
+        dir_vec := VecFor(dir)
         any_pressed := false
         
         for key in keys {
@@ -50,29 +54,33 @@ GetMoveDir :: proc(keyboard_state : [^]u8) -> MoveDir {
     
     switch {
         case up_down == 0 && left_right == 0:
-            return MoveDir.Stationary
+            return Dir.Stationary
         
         case up_down < 0 && left_right == 0:
-            return MoveDir.North
+            return Dir.North
         case up_down > 0 && left_right == 0:
-            return MoveDir.South
+            return Dir.South
         case up_down == 0 && left_right > 0:
-            return MoveDir.East
+            return Dir.East
         case up_down == 0 && left_right < 0:
-            return MoveDir.West
+            return Dir.West
 
         case up_down < 0 && left_right > 0:
-            return MoveDir.NorthEast
+            return Dir.NorthEast
         case up_down < 0 && left_right < 0:
-            return MoveDir.NorthWest
+            return Dir.NorthWest
         
         case up_down > 0 && left_right > 0:
-            return MoveDir.SouthEast
+            return Dir.SouthEast
         case up_down > 0 && left_right < 0:
-            return MoveDir.SouthWest
+            return Dir.SouthWest
     }
 
     // unreachable, but sane defaut
-    return MoveDir.Stationary
+    return Dir.Stationary
 }
 
+GetShootingState :: proc(keyboard_state : [^]u8) -> bool {
+    // for now, just hardcode space as the only 'fire' key
+    return keyboard_state[sdl2.SCANCODE_SPACE] == sdl2.PRESSED
+}
