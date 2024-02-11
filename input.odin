@@ -22,30 +22,57 @@ LEFT_KEYS :: []sdl2.Scancode{
 
 MovementKeys := #partial [MoveDir][]sdl2.Scancode {
     .North = UP_KEYS,
-    .East = LEFT_KEYS,
+    .East = RIGHT_KEYS,
     .South = DOWN_KEYS,
-    .West = RIGHT_KEYS,
+    .West = LEFT_KEYS,
 }
 
-GetMovementVec :: proc(keyboard_state : [^]u8) -> Vec2 {
-    move_vec := MoveVecForDir[MoveDir.Stationary]
-
+GetMoveDir :: proc(keyboard_state : [^]u8) -> MoveDir {
+    up_down := 0
+    left_right := 0
+    
     for keys, dir in MovementKeys {
         dir_vec := MoveVecForDir[dir]
         any_pressed := false
-
+        
         for key in keys {
             if keyboard_state[key] == sdl2.PRESSED {
                 any_pressed = true
                 break
             }
         }
-
+        
         if any_pressed {
-            move_vec.x += dir_vec.x
-            move_vec.y += dir_vec.y
+            left_right += int(dir_vec.x)
+            up_down += int(dir_vec.y)
         }
-    } 
+    }
+    
+    switch {
+        case up_down == 0 && left_right == 0:
+            return MoveDir.Stationary
+        
+        case up_down < 0 && left_right == 0:
+            return MoveDir.North
+        case up_down > 0 && left_right == 0:
+            return MoveDir.South
+        case up_down == 0 && left_right > 0:
+            return MoveDir.East
+        case up_down == 0 && left_right < 0:
+            return MoveDir.West
 
-    return move_vec
+        case up_down < 0 && left_right > 0:
+            return MoveDir.NorthEast
+        case up_down < 0 && left_right < 0:
+            return MoveDir.NorthWest
+        
+        case up_down > 0 && left_right > 0:
+            return MoveDir.SouthEast
+        case up_down > 0 && left_right < 0:
+            return MoveDir.SouthWest
+    }
+
+    // unreachable, but sane defaut
+    return MoveDir.Stationary
 }
+

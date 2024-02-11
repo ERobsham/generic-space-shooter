@@ -22,13 +22,13 @@ MoveDir :: enum {
 
 MoveVecForDir := [MoveDir]Vec2 {
     .Stationary = {  0,          0          },
-    .North      = {  0,         +1          },
-    .NorthEast  = { +1/SQRT2,   +1/SQRT2    },
+    .North      = {  0,         -1          },
+    .NorthEast  = { +1/SQRT2,   -1/SQRT2    },
     .East       = { +1,          0          },
-    .SouthEast  = { +1/SQRT2,   -1/SQRT2    },
-    .South      = {  0,         -1          },
-    .SouthWest  = { -1/SQRT2,   -1/SQRT2    },
+    .SouthEast  = { +1/SQRT2,   +1/SQRT2    },
+    .South      = {  0,         +1          },
+    .SouthWest  = { -1/SQRT2,   +1/SQRT2    },
     .West       = { -1,          0          },
-    .NorthWest  = { -1/SQRT2,   +1/SQRT2    },
+    .NorthWest  = { -1/SQRT2,   -1/SQRT2    },
 }
 
