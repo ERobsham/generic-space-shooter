@@ -11,9 +11,10 @@ SPRITESHEET_MAX_IDX :: 8
 
 SpriteSheetIdx :: u8
 
-SpriteCoords :: struct {
-    tx, ty : i32,
-    w, h   : i32,
+SpriteInfo :: struct {
+    ss_idx  : SpriteSheetIdx,
+    t_col, t_row: i32, // col == x / row == y
+    t_w, t_h: i32,
 }
 
 sprite_sheets: [dynamic]^sdl2.Texture = nil
@@ -41,15 +42,17 @@ DestroySpriteSheets :: proc() {
     }
 }
 
-DrawSprite :: proc(renderer: ^sdl2.Renderer, 
-                   sheetIdx: SpriteSheetIdx, 
-                       from: SpriteCoords,
-                         to: collision.BoundingBox) {
+DrawSprite :: proc(renderer: ^sdl2.Renderer, from: SpriteInfo, to: collision.BoundingBox) {
     assert(sprite_sheets != nil, "sprite sheets not initialized")
-    assert(int(sheetIdx) < len(sprite_sheets), "invalid sprite sheet index")
+    assert(int(from.ss_idx) < len(sprite_sheets), "invalid sprite sheet index")
 
-    src  := sdl2.Rect{from.tx, from.ty, from.w, from.h}
+    src  := sdl2.Rect{
+        from.t_col * SPRITESHEET_DIM, 
+        from.t_row * SPRITESHEET_DIM, 
+        from.t_w, 
+        from.t_h,
+    }
     dest := sdl2.Rect{to.x, to.y, to.w, to.h}
 
-    sdl2.RenderCopy(renderer, sprite_sheets[sheetIdx], &src, &dest)
+    sdl2.RenderCopy(renderer, sprite_sheets[from.ss_idx], &src, &dest)
 }

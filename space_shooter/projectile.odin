@@ -5,25 +5,32 @@ import "vendor:sdl2"
 import "../lib"
 import "../lib/move"
 
-PROJECTILE_SPRITESHEET_IDX_X :: 0
-PROJECTILE_SPRITESHEET_IDX_Y :: 4
-PROJECTILE_SPRITE_W :: 3
-PROJECTILE_SPRITE_H :: 12
+PROJECTILE_SPRITE :: SpriteInfo {
+    ss_idx = 0,
+    t_col = 0,
+    t_row = 4,
+    t_w = 3,
+    t_h = 12,
+}
 
-PROJECTILE_SPEED :: 1200
+PROJECTILE_SPEED :: 600.0
 
 
 Projectile :: struct {
-    using lib.GameObject,
+    using gObj: lib.GameObject,
+    
+    sprite: SpriteInfo,
 }
 
-CreateProjectile :: proc(s:^GameState, at: move.Vec2, dir: move.Vec2) {
-    p := Projectile{
+CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2) -> Projectile {
+    return Projectile{
         loc = at,
-        dimensions = { PROJECTILE_SPRITE_W, PROJECTILE_SPRITE_H },
+        dimensions = { PROJECTILE_SPRITE.t_w, PROJECTILE_SPRITE.t_h },
         
         dir = dir,
         speed = PROJECTILE_SPEED,
+
+        sprite = PROJECTILE_SPRITE,
 
         update = proc(self: ^lib.GameObject, dt: f64) {
             UpdateProjectile(cast(^Projectile)self, dt)
@@ -32,16 +39,20 @@ CreateProjectile :: proc(s:^GameState, at: move.Vec2, dir: move.Vec2) {
             DrawProjectile(cast(^Projectile)self, renderer)
         },
     }
-
 }
 
 
 UpdateProjectile :: proc(proj:^Projectile, dt: f64) {
-
+    lib.Move(cast(^lib.GameObject)proj, dt)
 }
 
 DrawProjectile :: proc(proj:^Projectile, renderer: ^sdl2.Renderer) {
-    if proj.destryed do return
+    using proj
+    
+    if destroyed do return
 
-
+    DrawSprite(renderer, 
+        sprite, 
+        lib.GetBoundingBox(cast(^lib.GameObject)proj),
+    )
 }

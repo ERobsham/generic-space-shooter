@@ -17,7 +17,7 @@ GameObject :: struct {
     dir: move.Vec2,
     
     disabled: bool,
-    destryed: bool,
+    destroyed: bool,
 }
 
 MoveWithin :: proc(gObj: ^GameObject, within: collision.BoundingBox, dt: f64) {

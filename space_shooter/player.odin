@@ -1,5 +1,6 @@
 package space_shooter
 
+import "core:c"
 import "core:fmt"
 import "vendor:sdl2"
 
@@ -11,20 +12,28 @@ import "../lib/deltaT"
 import "input"
 
 
-PLAYER_SS_IDX :: 0
-PLAYER_SS_COL_X :: 0
-PLAYER_SS_ROW_Y :: 0
-PLAYER_SPRITE_W :: 50
-PLAYER_SPRITE_H :: 57
+PLAYER_SPRITE :: SpriteInfo {
+    ss_idx = 0,
+    t_col = 0,
+    t_row = 0,
+    t_w = 50,
+    t_h = 57,
+}
 
 PLAYER_MOVE_SPEED :: 500.0
+PLAYER_ROF        :f64: 1.0/8.0 // ie shots per sec
+
 
 Player :: struct {
     using gObj: lib.GameObject,
 
-    processKeyboardInput: proc(self: ^Player, game_state: ^GameState, keyboard_state: [^]u8),
+    game_state: ^GameState,
+    processKeyboardInput: proc(self: ^Player, keyboard_state: [^]u8),
 
-    sprite: SpriteCoords,
+    sprite: SpriteInfo,
+    
+    facing: move.Dir,
+    shot_cooldown: f64,
 }
 
 InitPlayer :: proc() -> Player {
@@ -33,14 +42,12 @@ InitPlayer :: proc() -> Player {
         dir = { 0, 0 },
         speed = PLAYER_MOVE_SPEED,
         
-        dimensions= { PLAYER_SPRITE_W, PLAYER_SPRITE_H },
+        dimensions= { PLAYER_SPRITE.t_w, PLAYER_SPRITE.t_h },
 
-        sprite = {
-            tx = PLAYER_SS_COL_X * SPRITESHEET_DIM,
-            ty = PLAYER_SS_ROW_Y * SPRITESHEET_DIM,
-            w = PLAYER_SPRITE_W,
-            h = PLAYER_SPRITE_H,
-        },
+        sprite = PLAYER_SPRITE,
+        facing = move.Dir.North,
+
+        shot_cooldown = 0.0,
 
         processKeyboardInput = ProcessPlayerInput,
 
@@ -54,26 +61,47 @@ InitPlayer :: proc() -> Player {
     return p
 }
 
-ProcessPlayerInput :: proc(player: ^Player, game_state: ^GameState, keyboard_state: [^]u8) {
+ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
+    using player
+    
     move_dir := input.GetMoveDir(keyboard_state)
-    player.dir = move.VecFor(move_dir)
+    dir = move.VecFor(move_dir)
 
     shooting := input.GetShootingState(keyboard_state)
-    if shooting {
+    if shooting && shot_cooldown <= 0 {
+        shot_cooldown = PLAYER_ROF
+        
         // add a projectile to game state
+        proj := CreateProjectile(loc, move.VecFor(facing))
+        append(&game_state.projectiles, proj)
     }
 }
 
 UpdatePlayer :: proc(player: ^Player, dt: f64) {
+    using player
     lib.MoveWithin(cast(^lib.GameObject)player, WindowBB, dt)
 
+    if shot_cooldown > 0 do shot_cooldown -= dt
+    
     // other things?
 }
 
 DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
-    DrawSprite(renderer, 
-        PLAYER_SS_IDX,
-        player.sprite, 
+    using player
+    DrawSprite(renderer,
+        sprite,
         lib.GetBoundingBox(cast(^lib.GameObject)player),
     )
+
+    
+    if shot_cooldown <= 0 { // temp : just to see when shot CD is over.
+        ready_rec := sdl2.Rect{
+            c.int(loc.x),
+            c.int(loc.y),
+            c.int(dimensions.w),
+            c.int(dimensions.h),
+        }
+        sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
+        sdl2.RenderDrawRect(renderer, &ready_rec)
+    } // end temp
 }

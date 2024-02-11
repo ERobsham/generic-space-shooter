@@ -1,15 +1,12 @@
 package main
 
 import "core:c"
-import "core:fmt"
 import "vendor:sdl2"
 import "vendor:sdl2/image"
 
-import "lib/collision"
 import "lib/deltaT"
 
 import "space_shooter"
-import "space_shooter/input"
 
 R_FLAGS :: (sdl2.RENDERER_ACCELERATED | sdl2.RENDERER_PRESENTVSYNC)
 
@@ -38,38 +35,27 @@ main :: proc() {
 
     using space_shooter
     game_state := InitGameState(window, renderer)
-    defer DestroyGameState(&game_state)
+    defer DestroyGameState(game_state)
 
     deltaT.Init()
 
     event: sdl2.Event
     loop: 
     for {
-        
-        { // process input events
-            using sdl2.EventType
-            sdl2.PollEvent(&event)
-            #partial switch event.type {
-                case KEYDOWN, KEYUP:
-                    ProcessKeyboardInput(&game_state)
-                
-                // case MOUSEBUTTONDOWN, MOUSEBUTTONUP:
-                //     fmt.println("mouse event: ", event.button)
-                    
-                case QUIT:
-                    fmt.println("exit event")
-                    return
-            }
-        }
-        
+        // process exit events
+        sdl2.PollEvent(&event)
+        if event.type == sdl2.EventType.QUIT do return
+
+
+        ProcessKeyboardInput(game_state)
         
         // process game step
         dt := deltaT.Get()
-        UpdateGameState(&game_state, dt)
+        UpdateGameState(game_state, dt)
 
         // draw the new state
         ClearRender(renderer)
-        DrawGameState(&game_state, renderer)
+        DrawGameState(game_state, renderer)
         
         // for funzies to see how well mouse tracking works
         mX, mY : c.int
@@ -80,7 +66,7 @@ main :: proc() {
         sdl2.RenderPresent(renderer)
 
         // any cleanup
-        PostDrawCleanup(&game_state)
+        PostDrawCleanup(game_state)
     }
 }
 
