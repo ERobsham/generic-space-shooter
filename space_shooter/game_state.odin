@@ -82,9 +82,19 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
     enemy_spawner->update(dt)
 
     player->update(dt)
+    player_bb := lib.GetBoundingBox(&player)
 
     for &enemy in enemies {
         enemy->update(dt)
+
+        if enemy.destroyed do continue
+
+        enemy_bb := lib.GetBoundingBox(&enemy)
+        if enemy_bb->isColliding(player_bb) {
+            player.destroyed = true
+            enemy.destroyed = true
+            break
+        }
     }
     for &proj in projectiles {
         proj->update(dt)
@@ -105,7 +115,6 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
             }
         }
         else if !proj.is_friendly {
-            player_bb := lib.GetBoundingBox(&player)
             if proj_bb->isColliding(player_bb) {
                 proj.destroyed = true
                 player.destroyed = true
