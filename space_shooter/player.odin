@@ -70,8 +70,12 @@ ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
     if shooting && shot_cooldown <= 0 {
         shot_cooldown = PLAYER_ROF
         
+        bb := lib.GetBoundingBox(player)
+        center := bb->getCenter()
+        // center.y += ( f64(dimensions.h) / 2 )
+
         // add a projectile to game state
-        proj := CreateProjectile(loc, move.VecFor(facing))
+        proj := CreateProjectile(center, move.VecFor(facing))
         (cast(^SpaceShooterAPI)api)->addProjectile(proj)
     }
 }

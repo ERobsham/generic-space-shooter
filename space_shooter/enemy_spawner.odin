@@ -4,7 +4,8 @@ import "core:math/rand"
 
 import "../lib/move"
 
-SPAWN_RATE :: 1.0/1.0
+SPAWN_RATE  :: 1.0/1.0
+MAX_ENEMIES :: 10
 
 EnemySpawner :: struct {
     api: ^SpaceShooterAPI,
@@ -20,7 +21,7 @@ NewEnemySpawner :: proc(api: ^SpaceShooterAPI) -> EnemySpawner {
         api = api,
 
         spawn_rate = SPAWN_RATE,
-        cooldown = SPAWN_RATE * 5,
+        cooldown = SPAWN_RATE * 3,
 
         update = RunSpawner,
     }

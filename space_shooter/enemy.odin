@@ -14,7 +14,11 @@ ENEMY_SPRITE :: SpriteInfo {
     t_h = 16,
 }
 
-ENEMY_MOVE_SPEED :: 400.0
+ENEMY_MOVE_SPEED :: 250.0
+
+ENEMY_DIR_ROC :: 1.5
+ENEMY_ROF     :: 1.25
+
 
 EnemyState :: enum {
     APPROACH,
@@ -23,9 +27,15 @@ EnemyState :: enum {
 }
 
 EnemyState_TransistionTime := [EnemyState]f64 {
-    .APPROACH = 1.5,
-    .ENGAGE = 5,
-    .FLEE = -1,
+    .APPROACH = 1,
+    .ENGAGE = 10,
+    .FLEE = 10,
+}
+
+EnemyState_UpdateProcs := [EnemyState]proc(enemy: ^Enemy, dt: f64) {
+    .APPROACH = UpdateEnemy_Approach,
+    .ENGAGE = UpdateEnemy_Engage,
+    .FLEE = UpdateEnemy_Approach, // does the same thing for now -- just moves in the current direction
 }
 
 Enemy :: struct {
@@ -35,7 +45,9 @@ Enemy :: struct {
 
     state             : EnemyState,
     state_trans_cd    : f64,
-    engage_dir_swap_cd: f64,
+    
+    engage_dir_change_cd: f64,
+    engage_shoot_cd     : f64,
 }
 
 CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
@@ -54,11 +66,45 @@ CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
         draw = proc(self: ^lib.GameObject, renderer: ^sdl2.Renderer) {
             DrawEnemy(cast(^Enemy)self, renderer)
         },
+
+        state = EnemyState.APPROACH,
+        state_trans_cd = EnemyState_TransistionTime[EnemyState.APPROACH],
     }
 }
 
 UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
-    lib.Move(cast(^lib.GameObject)enemy, dt)
+    using enemy
+    state_trans_cd -= dt
+
+    should_transition := (state_trans_cd <= 0)
+    
+    if should_transition {
+        switch state {
+            case .APPROACH: {
+                state = EnemyState.ENGAGE
+                state_trans_cd = EnemyState_TransistionTime[EnemyState.ENGAGE]
+            }
+            case .ENGAGE: {
+                state = EnemyState.FLEE
+                state_trans_cd = EnemyState_TransistionTime[EnemyState.FLEE]
+
+                speed = u32( f64(speed) * 2.5 )
+
+                // ensure we're not `.Stationary` right now
+                if int(dir.x * 10) == 0 && 
+                    int(dir.y * 10) == 0 {
+                    dir = move.VecFor(move.Dir.North)
+                }
+            }
+            case .FLEE: {
+                destroyed = true
+            }
+        }
+    }
+
+    updateProc := EnemyState_UpdateProcs[state]
+
+    updateProc(enemy, dt)
 
     window_bounds := (cast(^SpaceShooterAPI)enemy.api)->windowBB()
     bb := lib.GetBoundingBox(cast(^lib.GameObject)enemy)
@@ -77,4 +123,54 @@ DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {
         sprite, 
         lib.GetBoundingBox(cast(^lib.GameObject)enemy),
     )
+}
+
+
+UpdateEnemy_Approach :: proc(enemy: ^Enemy, dt: f64) {
+    using enemy
+
+    lib.Move(cast(^lib.GameObject)enemy, dt)
+}
+
+UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
+    using enemy
+
+    if engage_dir_change_cd <= 0 {
+        engage_dir_change_cd = ENEMY_DIR_ROC
+        new_dir := move.RandomDir()
+        dir = move.VecFor(new_dir)
+    }
+    if engage_shoot_cd <= 0 {
+        engage_shoot_cd = ENEMY_ROF
+        bb := lib.GetBoundingBox(enemy)
+        center := bb->getCenter()
+        
+        proj := CreateProjectile(center, move.VecFor(move.Dir.South), false)
+        proj.speed = u32(f64(proj.speed) * .75)
+        (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+    }
+
+    engage_dir_change_cd -= dt
+    engage_shoot_cd -= dt
+    
+    
+    window_bounds := (cast(^SpaceShooterAPI)api)->windowBB()
+    window_bounds.h = ((window_bounds.h/4) * 3)
+    
+    lib.MoveWithin(cast(^lib.GameObject)enemy, window_bounds, dt)
+
+    // try to avoid hugging edges or getting too low on the screen
+    // ( for too long )
+
+    buffer :: 3
+    switch {
+        case dir.x <= 0 && loc.x                     < f64(window_bounds.x + buffer)                    :
+            fallthrough
+        case dir.x >= 0 && loc.x + f64(dimensions.w) > f64(window_bounds.x + window_bounds.w + buffer)  :
+            fallthrough
+        case dir.y <= 0 && loc.y                     < f64(window_bounds.y + buffer)                    :
+            fallthrough
+        case dir.y <= 0 && loc.y + f64(dimensions.h) > f64(window_bounds.y + window_bounds.h + buffer)  :
+            engage_dir_change_cd -= (dt * 10)
+    }
 }

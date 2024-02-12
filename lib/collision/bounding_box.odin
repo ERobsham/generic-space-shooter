@@ -44,7 +44,7 @@ IsColliding :: proc(this: ^BoundingBox, other: BoundingBox) -> bool {
 GetCenter :: proc(this: ^BoundingBox) -> move.Vec2 {
     using this
     return move.Vec2{ 
-        f64( (x+w) / 2 ),
-        f64( (y+h) / 2 ),
+        f64( x + (w / 2 ) ),
+        f64( y + (h / 2 ) ),
     }
 }

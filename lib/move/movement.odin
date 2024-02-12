@@ -1,6 +1,7 @@
 package move
 
 import "core:math"
+import "core:math/rand"
 
 SQRT2 :: math.SQRT_TWO
 
@@ -22,15 +23,15 @@ Dir :: enum {
 
 @(private)
 dirToMoveVecMap := [Dir]Vec2 {
-    .Stationary = {  0,          0          },
-    .North      = {  0,         -1          },
-    .NorthEast  = { +1/SQRT2,   -1/SQRT2    },
-    .East       = { +1,          0          },
-    .SouthEast  = { +1/SQRT2,   +1/SQRT2    },
-    .South      = {  0,         +1          },
-    .SouthWest  = { -1/SQRT2,   +1/SQRT2    },
-    .West       = { -1,          0          },
-    .NorthWest  = { -1/SQRT2,   -1/SQRT2    },
+    .Stationary = {  0,          0       },
+    .North      = {  0,         -1       },
+    .NorthEast  = { +1/SQRT2,   -1/SQRT2 },
+    .East       = { +1,          0       },
+    .SouthEast  = { +1/SQRT2,   +1/SQRT2 },
+    .South      = {  0,         +1       },
+    .SouthWest  = { -1/SQRT2,   +1/SQRT2 },
+    .West       = { -1,          0       },
+    .NorthWest  = { -1/SQRT2,   -1/SQRT2 },
 }
 
 VecFor :: proc(dir: Dir) -> Vec2 {
@@ -39,4 +40,18 @@ VecFor :: proc(dir: Dir) -> Vec2 {
         move_vec.x,
         move_vec.y,
     }
+}
+
+RandomDir :: proc() -> Dir {
+    return rand.choice([]Dir{
+        .Stationary, 
+        .North,
+        .East,
+        .South,
+        .West,
+        .NorthEast,
+        .SouthEast,
+        .NorthWest,
+        .SouthWest,
+    })
 }
