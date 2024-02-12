@@ -92,16 +92,4 @@ DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
         sprite,
         lib.GetBoundingBox(cast(^lib.GameObject)player),
     )
-
-    
-    if shot_cooldown <= 0 { // temp : just to see when shot CD is over.
-        ready_rec := sdl2.Rect{
-            c.int(loc.x),
-            c.int(loc.y),
-            c.int(dimensions.w),
-            c.int(dimensions.h),
-        }
-        sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
-        sdl2.RenderDrawRect(renderer, &ready_rec)
-    } // end temp
 }
