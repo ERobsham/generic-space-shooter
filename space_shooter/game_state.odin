@@ -97,7 +97,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
                 if enemy.destroyed do continue
                 enemy_bb := lib.GetBoundingBox(&enemy)
 
-                if collision.IsColliding(proj_bb, enemy_bb) {
+                if proj_bb->isColliding(enemy_bb) {
                     proj.destroyed = true
                     enemy.destroyed = true
                     break
@@ -106,7 +106,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
         }
         else if !proj.is_friendly {
             player_bb := lib.GetBoundingBox(&player)
-            if collision.IsColliding(proj_bb, player_bb) {
+            if proj_bb->isColliding(player_bb) {
                 proj.destroyed = true
                 player.destroyed = true
                 break

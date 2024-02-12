@@ -51,7 +51,7 @@ UpdateProjectile :: proc(proj:^Projectile, dt: f64) {
 
     window_bounds := (cast(^SpaceShooterAPI)proj.api)->windowBB()
     bb := lib.GetBoundingBox(cast(^lib.GameObject)proj)
-    if !collision.IsColliding(bb, window_bounds) {
+    if !bb->isColliding(window_bounds) {
         // we're outside the window bounds. dispose of this
         proj.destroyed = true
     }

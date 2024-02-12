@@ -43,10 +43,10 @@ Move :: proc(gObj: ^GameObject, dt: f64) {
 
 GetBoundingBox :: proc(gObj: ^GameObject) -> collision.BoundingBox {
     using gObj
-    return collision.BoundingBox{
+    return collision.NewBoundingBox(
         i32(loc.x),
         i32(loc.y),
         dimensions.w,
         dimensions.h,
-    }
+    )
 }

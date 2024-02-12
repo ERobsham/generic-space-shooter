@@ -11,7 +11,7 @@ W_WIDTH    :: 1024
 W_HEIGHT   :: 768
 W_FLAGS    :: (sdl2.WINDOW_INPUT_FOCUS|sdl2.WINDOW_MOUSE_FOCUS)
 
-WindowBB := collision.BoundingBox {
+WindowBB := collision.NewBoundingBox(
     0,0,
     W_WIDTH, W_HEIGHT,
-}
+)

@@ -62,7 +62,7 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
 
     window_bounds := (cast(^SpaceShooterAPI)enemy.api)->windowBB()
     bb := lib.GetBoundingBox(cast(^lib.GameObject)enemy)
-    if !collision.IsColliding(bb, window_bounds) {
+    if !bb->isColliding(window_bounds) {
         // we're outside the window bounds. dispose of this
         enemy.destroyed = true
     }
