@@ -8,6 +8,7 @@ import "move"
 GameObject :: struct {
     update: proc(self: ^GameObject, dt: f64),
     draw: proc(self: ^GameObject, renderer: ^sdl2.Renderer),
+    api: ^GameStateAPI,
     
     loc: move.Vec2,
     dimensions: struct { w, h: i32 },

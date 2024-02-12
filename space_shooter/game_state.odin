@@ -5,13 +5,23 @@ import "vendor:sdl2"
 import "../lib"
 import "../lib/collision"
 
+SpaceShooterAPI :: struct {
+    using gsAPI   : lib.GameStateAPI,
+    addEnemy      : proc(self: ^SpaceShooterAPI, enemy: Enemy),
+    addProjectile : proc(self: ^SpaceShooterAPI, proj: Projectile),
+    addPowerup    : proc(self: ^SpaceShooterAPI, powerup: lib.GameObject),
+}
+
 GameState :: struct {
+    using api : SpaceShooterAPI,
+
     window_bounds : collision.BoundingBox,
 
     // game objects
     player      : Player,
     enemies     : [dynamic]Enemy,
     projectiles : [dynamic]Projectile,
+    powerUps    : [dynamic]lib.GameObject,
 }
 
 InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameState {
@@ -22,11 +32,20 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s := new(GameState)
     s.window_bounds = WindowBB
     s.player        = InitPlayer()
+    s.player.api = s
     s.enemies       = make([dynamic]Enemy, 0, 20)
     s.projectiles   = make([dynamic]Projectile, 0, 20)
+    s.powerUps      = make([dynamic]lib.GameObject, 0, 20)
 
-    // give players a ref to the world state so they can spawn projectiles, etc
-    s.player.game_state = s
+    s.addEnemy = proc(self: ^SpaceShooterAPI, enemy: Enemy) {
+        AddEnemy(cast(^GameState)self, enemy)
+    }
+    s.addProjectile = proc(self: ^SpaceShooterAPI, proj: Projectile) {
+        AddProjectile(cast(^GameState)self, proj)
+    }
+    s.addPowerup = proc(self: ^SpaceShooterAPI, powerup: lib.GameObject) {
+        AddPowerup(cast(^GameState)self, powerup)
+    }
 
     return s
 }
@@ -102,4 +121,27 @@ PostDrawCleanup :: proc (s: ^GameState) {
             i-=1
         }
     }
+}
+
+
+//
+// space shooter 'API' methods
+//
+
+AddEnemy :: proc(api: ^GameState, enemy: Enemy) {
+    e := enemy
+    e.api = api
+    append(&api.enemies, e)
+}
+
+AddProjectile :: proc(api: ^GameState, proj: Projectile) {
+    p := proj
+    p.api = api
+    append(&api.projectiles, p)
+}
+
+AddPowerup :: proc(api: ^GameState, power_up: lib.GameObject) {
+    p := power_up
+    p.api = api
+    append(&api.powerUps, p)
 }

@@ -1,0 +1,5 @@
+package lib
+
+GameStateAPI :: struct {
+    //
+}

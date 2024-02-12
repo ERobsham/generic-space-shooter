@@ -27,7 +27,6 @@ PLAYER_ROF        :f64: 1.0/8.0 // ie shots per sec
 Player :: struct {
     using gObj: lib.GameObject,
 
-    game_state: ^GameState,
     processKeyboardInput: proc(self: ^Player, keyboard_state: [^]u8),
 
     sprite: SpriteInfo,
@@ -73,7 +72,7 @@ ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
         
         // add a projectile to game state
         proj := CreateProjectile(loc, move.VecFor(facing))
-        append(&game_state.projectiles, proj)
+        (cast(^SpaceShooterAPI)api)->addProjectile(proj)
     }
 }
 
