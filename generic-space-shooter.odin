@@ -58,9 +58,9 @@ main :: proc() {
         DrawGameState(game_state, renderer)
         
         // for funzies to see how well mouse tracking works
-        mX, mY : c.int
-        sdl2.GetMouseState(&mX, &mY)
-        DrawRect(renderer, i32(mX), i32(mY))
+        // mX, mY : c.int
+        // sdl2.GetMouseState(&mX, &mY)
+        // DrawRect(renderer, i32(mX), i32(mY))
 
         // present the scene
         sdl2.RenderPresent(renderer)
@@ -77,11 +77,11 @@ ClearRender :: proc(renderer: ^sdl2.Renderer) {
 
 
 // helper to draw rect around mouse
-DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
-    sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
+// DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
+//     sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
     
-    rect := sdl2.Rect{x-10, y-10, 20, 20}
-    sdl2.RenderDrawRect(renderer, &rect)
+//     rect := sdl2.Rect{x-10, y-10, 20, 20}
+//     sdl2.RenderDrawRect(renderer, &rect)
     
-    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
-}
+//     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
+// }
