@@ -44,7 +44,7 @@ RunSpawner :: proc(self: ^EnemySpawner, dt: f64) {
             y = f64(-1 * ENEMY_SPRITE.t_h),
         }
 
-        e := CreateEnemy(inital_loc, move.VecFor(move.Dir.South))
+        e := CreateEnemy(inital_loc, move.Dir.South)
         api->addEnemy(e)
     }
 }

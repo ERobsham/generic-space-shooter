@@ -14,7 +14,7 @@ ENEMY_SPRITE :: SpriteInfo {
     t_h = 16,
 }
 
-ENEMY_MOVE_SPEED :: 250.0
+ENEMY_MOVE_SPEED :: 150.0
 
 ENEMY_DIR_ROC :: 1.5
 ENEMY_ROF     :: 1.25
@@ -43,6 +43,8 @@ Enemy :: struct {
 
     sprite: SpriteInfo,
 
+    facing: move.Dir,
+
     state             : EnemyState,
     state_trans_cd    : f64,
     
@@ -50,15 +52,16 @@ Enemy :: struct {
     engage_shoot_cd     : f64,
 }
 
-CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
+CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Dir) -> Enemy {
     return Enemy {
         loc = at,
         dimensions = { ENEMY_SPRITE.t_w, ENEMY_SPRITE.t_h },
         
-        dir = initial_dir,
+        dir = move.VecFor(initial_dir),
         speed = ENEMY_MOVE_SPEED,
 
         sprite = ENEMY_SPRITE,
+        facing = initial_dir,
 
         update = proc(self: ^lib.GameObject, dt: f64) {
             UpdateEnemy(cast(^Enemy)self, dt)
@@ -91,10 +94,18 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
                 speed = u32( f64(speed) * 2.5 )
 
                 // ensure we're not `.Stationary` right now
-                if int(dir.x * 10) == 0 && 
-                    int(dir.y * 10) == 0 {
-                    dir = move.VecFor(move.Dir.North)
+                new_dir := facing
+                #partial switch facing {
+                    case .Stationary:
+                        new_dir = move.Dir.North
+                    case .South, .SouthEast, .SouthWest:
+                        new_dir = move.ReverseDir(facing)
+                    case .East:
+                        new_dir = move.Dir.NorthEast
+                    case .West:
+                        new_dir = move.Dir.NorthWest
                 }
+                ChangeEnemyDirection(enemy, new_dir)
             }
             case .FLEE: {
                 destroyed = true
@@ -125,6 +136,11 @@ DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {
     )
 }
 
+ChangeEnemyDirection :: proc(enemy: ^Enemy, new_dir: move.Dir) {
+    using enemy
+    dir = move.VecFor(new_dir)
+    facing = new_dir
+}
 
 UpdateEnemy_Approach :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
@@ -138,7 +154,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     if engage_dir_change_cd <= 0 {
         engage_dir_change_cd = ENEMY_DIR_ROC
         new_dir := move.RandomDir()
-        dir = move.VecFor(new_dir)
+        ChangeEnemyDirection(enemy, new_dir)
     }
     if engage_shoot_cd <= 0 {
         engage_shoot_cd = ENEMY_ROF
@@ -160,9 +176,8 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     lib.MoveWithin(cast(^lib.GameObject)enemy, window_bounds, dt)
 
     // try to avoid hugging edges or getting too low on the screen
-    // ( for too long )
-
-    buffer :: 3
+    // ( at least for too long )
+    buffer :: 20 // px
     switch {
         case dir.x <= 0 && loc.x                     < f64(window_bounds.x + buffer)                    :
             fallthrough

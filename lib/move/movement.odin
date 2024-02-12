@@ -34,6 +34,18 @@ dirToMoveVecMap := [Dir]Vec2 {
     .NorthWest  = { -1/SQRT2,   -1/SQRT2 },
 }
 
+dirReverseMap := [Dir]Dir {
+    .Stationary = .Stationary,
+    .North      = .South,
+    .NorthEast  = .SouthWest,
+    .East       = .West,
+    .SouthEast  = .NorthWest,
+    .South      = .North,
+    .SouthWest  = .NorthEast,
+    .West       = .East,
+    .NorthWest  = .SouthEast,
+}
+
 VecFor :: proc(dir: Dir) -> Vec2 {
     move_vec := dirToMoveVecMap[dir]
     return Vec2{
@@ -54,4 +66,8 @@ RandomDir :: proc() -> Dir {
         .NorthWest,
         .SouthWest,
     })
+}
+
+ReverseDir :: proc(d: Dir) -> Dir {
+    return dirReverseMap[d]
 }
