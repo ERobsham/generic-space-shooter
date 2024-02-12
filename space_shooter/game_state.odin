@@ -85,20 +85,32 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
 
     for &enemy in enemies {
         enemy->update(dt)
-
-        bb := lib.GetBoundingBox(cast(^lib.GameObject)&enemy)
-        if !collision.IsColliding(bb, window_bounds) {
-            // we're outside the window bounds. dispose of this
-            enemy.destroyed = true
-        }
     }
     for &proj in projectiles {
         proj->update(dt)
 
-        bb := lib.GetBoundingBox(cast(^lib.GameObject)&proj)
-        if !collision.IsColliding(bb, window_bounds) {
-            // we're outside the window bounds. dispose of this
-            proj.destroyed = true
+        if proj.destroyed do continue
+
+        proj_bb := lib.GetBoundingBox(&proj)
+        if proj.is_friendly {
+            for &enemy in enemies {
+                if enemy.destroyed do continue
+                enemy_bb := lib.GetBoundingBox(&enemy)
+
+                if collision.IsColliding(proj_bb, enemy_bb) {
+                    proj.destroyed = true
+                    enemy.destroyed = true
+                    break
+                }
+            }
+        }
+        else if !proj.is_friendly {
+            player_bb := lib.GetBoundingBox(&player)
+            if collision.IsColliding(proj_bb, player_bb) {
+                proj.destroyed = true
+                player.destroyed = true
+                break
+            }
         }
     }
 }

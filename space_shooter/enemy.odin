@@ -4,6 +4,7 @@ import "vendor:sdl2"
 
 import "../lib"
 import "../lib/move"
+import "../lib/collision"
 
 ENEMY_SPRITE :: SpriteInfo {
     ss_idx = 0,
@@ -15,10 +16,26 @@ ENEMY_SPRITE :: SpriteInfo {
 
 ENEMY_MOVE_SPEED :: 400.0
 
+EnemyState :: enum {
+    APPROACH,
+    ENGAGE,
+    FLEE,
+}
+
+EnemyState_TransistionTime := [EnemyState]f64 {
+    .APPROACH = 1.5,
+    .ENGAGE = 5,
+    .FLEE = -1,
+}
+
 Enemy :: struct {
     using gObj: lib.GameObject,
 
     sprite: SpriteInfo,
+
+    state             : EnemyState,
+    state_trans_cd    : f64,
+    engage_dir_swap_cd: f64,
 }
 
 CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
@@ -42,6 +59,13 @@ CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
 
 UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
     lib.Move(cast(^lib.GameObject)enemy, dt)
+
+    window_bounds := (cast(^SpaceShooterAPI)enemy.api)->windowBB()
+    bb := lib.GetBoundingBox(cast(^lib.GameObject)enemy)
+    if !collision.IsColliding(bb, window_bounds) {
+        // we're outside the window bounds. dispose of this
+        enemy.destroyed = true
+    }
 }
 
 DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {

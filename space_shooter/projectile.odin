@@ -4,6 +4,7 @@ import "vendor:sdl2"
 
 import "../lib"
 import "../lib/move"
+import "../lib/collision"
 
 PROJECTILE_SPRITE :: SpriteInfo {
     ss_idx = 0,
@@ -20,9 +21,11 @@ Projectile :: struct {
     using gObj: lib.GameObject,
     
     sprite: SpriteInfo,
+
+    is_friendly: bool,
 }
 
-CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2) -> Projectile {
+CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2, is_friendly: bool = true) -> Projectile {
     return Projectile{
         loc = at,
         dimensions = { PROJECTILE_SPRITE.t_w, PROJECTILE_SPRITE.t_h },
@@ -38,11 +41,20 @@ CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2) -> Projectile {
         draw = proc(self: ^lib.GameObject, renderer: ^sdl2.Renderer) {
             DrawProjectile(cast(^Projectile)self, renderer)
         },
+
+        is_friendly = is_friendly,
     }
 }
 
 UpdateProjectile :: proc(proj:^Projectile, dt: f64) {
     lib.Move(cast(^lib.GameObject)proj, dt)
+
+    window_bounds := (cast(^SpaceShooterAPI)proj.api)->windowBB()
+    bb := lib.GetBoundingBox(cast(^lib.GameObject)proj)
+    if !collision.IsColliding(bb, window_bounds) {
+        // we're outside the window bounds. dispose of this
+        proj.destroyed = true
+    }
 }
 
 DrawProjectile :: proc(proj:^Projectile, renderer: ^sdl2.Renderer) {
