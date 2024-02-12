@@ -24,12 +24,12 @@ Enemy :: struct {
 CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Vec2) -> Enemy {
     return Enemy {
         loc = at,
-        dimensions = { PROJECTILE_SPRITE.t_w, PROJECTILE_SPRITE.t_h },
+        dimensions = { ENEMY_SPRITE.t_w, ENEMY_SPRITE.t_h },
         
         dir = initial_dir,
-        speed = PROJECTILE_SPEED,
+        speed = ENEMY_MOVE_SPEED,
 
-        sprite = PROJECTILE_SPRITE,
+        sprite = ENEMY_SPRITE,
 
         update = proc(self: ^lib.GameObject, dt: f64) {
             UpdateEnemy(cast(^Enemy)self, dt)

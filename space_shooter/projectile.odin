@@ -41,7 +41,6 @@ CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2) -> Projectile {
     }
 }
 
-
 UpdateProjectile :: proc(proj:^Projectile, dt: f64) {
     lib.Move(cast(^lib.GameObject)proj, dt)
 }

@@ -10,6 +10,7 @@ SpaceShooterAPI :: struct {
     addEnemy      : proc(self: ^SpaceShooterAPI, enemy: Enemy),
     addProjectile : proc(self: ^SpaceShooterAPI, proj: Projectile),
     addPowerup    : proc(self: ^SpaceShooterAPI, powerup: lib.GameObject),
+    windowBB      : proc(self: ^SpaceShooterAPI) -> collision.BoundingBox,
 }
 
 GameState :: struct {
@@ -22,6 +23,9 @@ GameState :: struct {
     enemies     : [dynamic]Enemy,
     projectiles : [dynamic]Projectile,
     powerUps    : [dynamic]lib.GameObject,
+
+    // systems
+    enemy_spawner : EnemySpawner,
 }
 
 InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameState {
@@ -30,13 +34,6 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     })
 
     s := new(GameState)
-    s.window_bounds = WindowBB
-    s.player        = InitPlayer()
-    s.player.api = s
-    s.enemies       = make([dynamic]Enemy, 0, 20)
-    s.projectiles   = make([dynamic]Projectile, 0, 20)
-    s.powerUps      = make([dynamic]lib.GameObject, 0, 20)
-
     s.addEnemy = proc(self: ^SpaceShooterAPI, enemy: Enemy) {
         AddEnemy(cast(^GameState)self, enemy)
     }
@@ -46,6 +43,20 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.addPowerup = proc(self: ^SpaceShooterAPI, powerup: lib.GameObject) {
         AddPowerup(cast(^GameState)self, powerup)
     }
+    s.windowBB = proc(self: ^SpaceShooterAPI) -> collision.BoundingBox {
+        bb := (cast(^GameState)self).window_bounds
+        return bb
+    }
+    
+    s.window_bounds = WindowBB
+
+    s.player        = InitPlayer()
+    s.player.api = s
+    s.enemies       = make([dynamic]Enemy, 0, 20)
+    s.projectiles   = make([dynamic]Projectile, 0, 20)
+    s.powerUps      = make([dynamic]lib.GameObject, 0, 20)
+
+    s.enemy_spawner = NewEnemySpawner(s)
 
     return s
 }
@@ -68,6 +79,8 @@ ProcessKeyboardInput :: proc(s: ^GameState) {
 UpdateGameState :: proc(s: ^GameState, dt: f64) {
     using s
     
+    enemy_spawner->update(dt)
+
     player->update(dt)
 
     for &enemy in enemies {
