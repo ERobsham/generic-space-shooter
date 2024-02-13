@@ -26,7 +26,7 @@ Projectile :: struct {
 }
 
 CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2, is_friendly: bool = true) -> Projectile {
-    return Projectile{
+    p := Projectile{
         loc = at,
         dimensions = { PROJECTILE_SPRITE.t_w, PROJECTILE_SPRITE.t_h },
         
@@ -44,6 +44,12 @@ CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2, is_friendly: bool = true
 
         is_friendly = is_friendly,
     }
+
+    if !is_friendly {
+        p.sprite.t_row += 1
+    }
+
+    return p
 }
 
 UpdateProjectile :: proc(proj:^Projectile, dt: f64) {
