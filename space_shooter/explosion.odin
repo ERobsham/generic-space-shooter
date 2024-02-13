@@ -10,8 +10,8 @@ EXPLOSION_SPRITE :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
     t_row = 7,
-    t_w = 18,
-    t_h = 18,
+    t_w = 34,
+    t_h = 34,
 }
 
 EXPLOSION_SPEED :: 1.0/4.0
