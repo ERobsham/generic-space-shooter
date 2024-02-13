@@ -21,3 +21,27 @@ I'm developing on macos, so directions are specifically for macos users, however
 * Clone this repo `git clone https://github.com/ERobsham/generic-space-shooter.git`
 * Run the game! (from root level of the repo)
     * `odin run .`
+
+
+
+# Quick overview:
+
+#### Rough Source Structuring
+
+Still heavily a work in progress, but as of this readme update:
+```
+ | generic-space-shooter.odin
+ |   main entrypoint, sets up SDL2, creates the main window and runs the 'game loop'
+ | 
+ | /lib
+ |   anything that seems like its a decent abstraction that could be useful in another game...
+ |   direction / movement definitions, bounding box collisions, delta time calculation, etc
+ |
+ | /space_shooter
+ |   specific logic for _this_ game...  player controller, enemy behaviors,
+ |   general game state, etc, etc
+```
+
+Trying to set things up so each type of entity can manage their own behaviors to keep the logic as straight forward as possible. 
+
+Most things are implemented just to 'get it working' at first, then I take a second pass and try to clean things up a bit if possible.
