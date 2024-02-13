@@ -189,3 +189,14 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
             engage_dir_change_cd -= (dt * 10)
     }
 }
+
+EnemeyDestroyed :: proc(enemy: ^Enemy) {
+    using enemy
+    enemy.destroyed = true
+
+    bb := lib.GetBoundingBox(enemy)
+    center := bb->getCenter()
+
+    expl := CreateExplosionPtr(center)
+    (cast(^SpaceShooterAPI)api)->addMisc(expl)
+}

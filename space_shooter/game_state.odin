@@ -10,6 +10,7 @@ SpaceShooterAPI :: struct {
     addEnemy      : proc(self: ^SpaceShooterAPI, enemy: Enemy),
     addProjectile : proc(self: ^SpaceShooterAPI, proj: Projectile),
     addPowerup    : proc(self: ^SpaceShooterAPI, powerup: lib.GameObject),
+    addMisc       : proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject),
     windowBB      : proc(self: ^SpaceShooterAPI) -> collision.BoundingBox,
 }
 
@@ -23,6 +24,7 @@ GameState :: struct {
     enemies     : [dynamic]Enemy,
     projectiles : [dynamic]Projectile,
     powerUps    : [dynamic]lib.GameObject,
+    misc_objs   : [dynamic]^lib.GameObject,
 
     // systems
     enemy_spawner : EnemySpawner,
@@ -43,6 +45,9 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.addPowerup = proc(self: ^SpaceShooterAPI, powerup: lib.GameObject) {
         AddPowerup(cast(^GameState)self, powerup)
     }
+    s.addMisc = proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject) {
+        AddMisc(cast(^GameState)self, misc)
+    }
     s.windowBB = proc(self: ^SpaceShooterAPI) -> collision.BoundingBox {
         bb := (cast(^GameState)self).window_bounds
         return bb
@@ -55,6 +60,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.enemies       = make([dynamic]Enemy, 0, 20)
     s.projectiles   = make([dynamic]Projectile, 0, 20)
     s.powerUps      = make([dynamic]lib.GameObject, 0, 20)
+    s.misc_objs     = make([dynamic]^lib.GameObject, 0, 20)
 
     s.enemy_spawner = NewEnemySpawner(s)
 
@@ -91,8 +97,8 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
 
         enemy_bb := lib.GetBoundingBox(&enemy)
         if enemy_bb->isColliding(player_bb) {
-            player.destroyed = true
-            enemy.destroyed = true
+            PlayerDestroyed(&player)
+            EnemeyDestroyed(&enemy)
             break
         }
     }
@@ -109,7 +115,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
 
                 if proj_bb->isColliding(enemy_bb) {
                     proj.destroyed = true
-                    enemy.destroyed = true
+                    EnemeyDestroyed(&enemy)
                     break
                 }
             }
@@ -117,10 +123,14 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
         else if !proj.is_friendly {
             if proj_bb->isColliding(player_bb) {
                 proj.destroyed = true
-                player.destroyed = true
+                PlayerDestroyed(&player)
                 break
             }
         }
+    }
+
+    for &misc_obj in misc_objs {
+        misc_obj->update(dt)
     }
 }
 
@@ -137,6 +147,11 @@ DrawGameState :: proc(s: ^GameState, renderer: ^sdl2.Renderer) {
         if proj.destroyed do continue
         proj->draw(renderer)
     }
+    
+    for &misc_obj in misc_objs {
+        if misc_obj.destroyed do continue
+        misc_obj->draw(renderer)
+    }
 }
 
 PostDrawCleanup :: proc (s: ^GameState) {
@@ -152,6 +167,15 @@ PostDrawCleanup :: proc (s: ^GameState) {
     for i := 0; i < len(projectiles); i += 1 {
         if projectiles[i].destroyed {
             unordered_remove(&projectiles, i)
+            i-=1
+        }
+    }
+
+
+    for i := 0; i < len(misc_objs); i += 1 {
+        if misc_objs[i].destroyed {
+            free(misc_objs[i])
+            unordered_remove(&misc_objs, i)
             i-=1
         }
     }
@@ -178,4 +202,9 @@ AddPowerup :: proc(api: ^GameState, power_up: lib.GameObject) {
     p := power_up
     p.api = api
     append(&api.powerUps, p)
+}
+
+AddMisc :: proc(api: ^GameState, misc: ^lib.GameObject) {
+    misc.api = api
+    append(&api.misc_objs, misc)
 }

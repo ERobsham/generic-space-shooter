@@ -96,3 +96,14 @@ DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
         lib.GetBoundingBox(cast(^lib.GameObject)player),
     )
 }
+
+PlayerDestroyed :: proc(player: ^Player) {
+    using player
+    destroyed = true
+
+    bb := lib.GetBoundingBox(player)
+    center := bb->getCenter()
+
+    expl := CreateExplosionPtr(center)
+    (cast(^SpaceShooterAPI)api)->addMisc(expl)
+}
