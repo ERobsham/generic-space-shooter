@@ -31,6 +31,8 @@ CreateExplosionPtr :: proc(at: move.Vec2) -> ^Explosion {
         
     e.loc = at
     e.dimensions = { EXPLOSION_SPRITE.t_w, EXPLOSION_SPRITE.t_h }
+    e.loc.x -= (f64(EXPLOSION_SPRITE.t_w) / 2)
+    e.loc.y -= (f64(EXPLOSION_SPRITE.t_h) / 2)
     
     e.dir = move.VecFor(move.Dir.Stationary)
     e.speed = 0
