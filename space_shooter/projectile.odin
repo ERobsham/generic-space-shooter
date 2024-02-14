@@ -16,7 +16,6 @@ PROJECTILE_SPRITE :: SpriteInfo {
 
 PROJECTILE_SPEED :: 600.0
 
-
 Projectile :: struct {
     using gObj: lib.GameObject,
     

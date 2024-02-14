@@ -14,7 +14,8 @@ ENEMY_SPRITE :: SpriteInfo {
     t_h = 16,
 }
 
-ENEMY_MOVE_SPEED :: 150.0
+ENEMY_MOVE_SPEED     :: 150.0
+ENEMY_PROJ_SPEED_MOD :: 0.5
 
 ENEMY_DIR_ROC :: 1.5
 ENEMY_ROF     :: 1.25
@@ -162,7 +163,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
         center := bb->getCenter()
         
         proj := CreateProjectile(center, move.VecFor(move.Dir.South), false)
-        proj.speed = u32(f64(proj.speed) * .75)
+        proj.speed = u32(f64(proj.speed) * ENEMY_PROJ_SPEED_MOD)
         (cast(^SpaceShooterAPI)api)->addProjectile(proj)
     }
 

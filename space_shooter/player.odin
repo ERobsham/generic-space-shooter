@@ -2,6 +2,7 @@ package space_shooter
 
 import "core:c"
 import "core:fmt"
+import "core:math"
 import "vendor:sdl2"
 
 import "../lib"
@@ -21,8 +22,21 @@ PLAYER_SPRITE :: SpriteInfo {
 }
 
 PLAYER_MOVE_SPEED :: 500.0
-PLAYER_ROF        :f64: 1.0/8.0 // ie shots per sec
+PLAYER_ROF        :f64: 4.0 // ie shots per sec
 
+PLAYER_MULITI_SHOT_MAX :: 9
+
+playerProjOrigins := [PLAYER_MULITI_SHOT_MAX]shotOrigin {
+    { { 25,  0 }, .North }, // tip - top center
+    { {  0, 40 }, .North }, // far left - wing tip
+    { { 50, 40 }, .North }, // far right - wing tip
+    { { 15, 10 }, .North }, // offset left - top
+    { { 40, 10 }, .North }, // offset right - top
+    { {  0, 40 }, .NorthWest },
+    { { 50, 40 }, .NorthEast },
+    { { 25,  0 }, .NorthWest },
+    { { 25,  0 }, .NorthEast },
+}
 
 Player :: struct {
     using gObj: lib.GameObject,
@@ -30,9 +44,19 @@ Player :: struct {
     processKeyboardInput: proc(self: ^Player, keyboard_state: [^]u8),
 
     sprite: SpriteInfo,
-    
     facing: move.Dir,
+    
     shot_cooldown: f64,
+    rof_mod      : f64,
+
+    multi_shot    : u8,
+    punch_through : u8,
+    shot_speed_mod: f64,
+}
+
+shotOrigin :: struct {
+    offset: move.Vec2,
+    dir: move.Dir,
 }
 
 InitPlayer :: proc() -> Player {
@@ -46,8 +70,6 @@ InitPlayer :: proc() -> Player {
         sprite = PLAYER_SPRITE,
         facing = move.Dir.North,
 
-        shot_cooldown = 0.0,
-
         processKeyboardInput = ProcessPlayerInput,
 
         update = proc(self: ^lib.GameObject, dt: f64) {
@@ -56,6 +78,13 @@ InitPlayer :: proc() -> Player {
         draw = proc(self: ^lib.GameObject, renderer: ^sdl2.Renderer) {
             DrawPlayer(cast(^Player)self, renderer)
         },
+
+        shot_cooldown = 0,
+        rof_mod       = 1.0,
+
+        multi_shot     = 0,
+        punch_through  = 0,
+        shot_speed_mod = 1.0,
     }
     return p
 }
@@ -68,15 +97,8 @@ ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
 
     shooting := input.GetShootingState(keyboard_state)
     if shooting && shot_cooldown <= 0 {
-        shot_cooldown = PLAYER_ROF
-        
-        bb := lib.GetBoundingBox(player)
-        center := bb->getCenter()
-        // center.y += ( f64(dimensions.h) / 2 )
-
-        // add a projectile to game state
-        proj := CreateProjectile(center, move.VecFor(facing))
-        (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+        shot_cooldown = 1.0 / (PLAYER_ROF * rof_mod)
+        GeneratePlayerProjectiles(player)
     }
 }
 
@@ -106,4 +128,34 @@ PlayerDestroyed :: proc(player: ^Player) {
 
     expl := CreateExplosionPtr(center)
     (cast(^SpaceShooterAPI)api)->addMisc(expl)
+}
+
+GeneratePlayerProjectiles :: proc(player: ^Player) {
+    using player
+
+    // if mulit_shot == 1, we want to shoot balanced from two sides
+    offset := u8(multi_shot % 2 == 1 ? 1 : 0)
+
+    for i := u8(0 + offset); i <= (multi_shot + offset); i += 1 {
+        shot_origin := playerProjOrigins[i]
+        
+        shot_loc := move.Vec2 {
+            loc.x + shot_origin.offset.x,
+            loc.y + shot_origin.offset.y,
+        }
+        
+        // we want more like NNE/NNW, so make some custom adjustments for now.
+        shot_dir := move.VecFor(shot_origin.dir)
+        if shot_dir.x > 0 {
+            shot_dir = { +1/math.SQRT_FIVE, -2/math.SQRT_FIVE }
+        } 
+        else if shot_dir.x < 0 {
+            shot_dir = { -1/math.SQRT_FIVE, -2/math.SQRT_FIVE }
+        }
+
+        proj := CreateProjectile(shot_loc, shot_dir)
+        proj.speed = u32(f64(proj.speed) * shot_speed_mod)
+
+        (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+    }
 }
