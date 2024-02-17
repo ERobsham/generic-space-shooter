@@ -31,3 +31,11 @@ Get :: proc() -> f64 {
     
     return dt_frac_sec
 }
+
+CurrentMS :: proc () -> u64 {
+    return currentTimestamp()
+}
+
+CurrentSec :: proc () -> u64 {
+    return currentTimestamp() / 1000
+}

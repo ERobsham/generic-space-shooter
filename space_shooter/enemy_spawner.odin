@@ -4,14 +4,19 @@ import "core:math/rand"
 
 import "../lib/physics2d"
 
-SPAWN_RATE  :: 1.0/1.0
-MAX_ENEMIES :: 10
+SPAWN_RATE  :: 1.0/5.0
+
+ENEMIES_PER_WAVE :: 10
+WAVE_COOLDOWN   :: 5.0
 
 EnemySpawner :: struct {
     api: ^SpaceShooterAPI,
     
     spawn_rate: f64,
     cooldown  : f64,
+
+    wave_spawns_remaining: u64,
+    wave                 : u64,
 
     update: proc(self: ^EnemySpawner, dt: f64),
 }
@@ -21,7 +26,10 @@ NewEnemySpawner :: proc(api: ^SpaceShooterAPI) -> EnemySpawner {
         api = api,
 
         spawn_rate = SPAWN_RATE,
-        cooldown = SPAWN_RATE * 3,
+        cooldown = 3.0,  // initial cooldown before enemeis spawn
+
+        wave_spawns_remaining = ENEMIES_PER_WAVE,
+        wave = 1,
 
         update = RunSpawner,
     }
@@ -35,16 +43,27 @@ RunSpawner :: proc(self: ^EnemySpawner, dt: f64) {
     if cooldown <= 0 {
         cooldown = spawn_rate
 
-        bb := api->windowBB()
-
-        x_rand := rand.float64_range(0, bb.dimensions.w - f64(ENEMY_SPRITE.t_w))
-
-        inital_loc := physics2d.Vec2{
-            x = x_rand,
-            y = f64(-1 * ENEMY_SPRITE.t_h),
+        if wave_spawns_remaining == 0 {
+            cooldown = WAVE_COOLDOWN
+            wave_spawns_remaining = ENEMIES_PER_WAVE
+            wave += 1
+            return
         }
 
-        e := CreateEnemy(inital_loc, Dir.South)
+        path := &enemeyPath1
+        if wave % 2 == 0 {
+            path = &enemeyPath1_mirrored
+        }
+        if wave % 3 == 0 {
+            if wave_spawns_remaining % 2 == 0 {
+                path = &enemeyPath1
+            } else {
+                path = &enemeyPath1_mirrored
+            }
+        }
+
+        e := CreateEnemy({-20, -20}, path)
         api->addEnemy(e)
+        wave_spawns_remaining -= 1
     }
 }

@@ -1,5 +1,6 @@
 package space_shooter
 
+import "core:math/rand"
 import "vendor:sdl2"
 
 import "../lib"
@@ -13,11 +14,11 @@ ENEMY_SPRITE :: SpriteInfo {
     t_h = 16,
 }
 
-ENEMY_MOVE_SPEED     :: 150.0
+ENEMY_MOVE_SPEED     :: 1.0
 ENEMY_PROJ_SPEED_MOD :: 0.5
 
-ENEMY_DIR_ROC :: 1.5
-ENEMY_ROF     :: 1.25
+ENEMY_ROF     :: 1.0
+ENEMY_SHOT_CHANCE :: 1.0/4.0
 
 
 EnemyState :: enum {
@@ -33,9 +34,9 @@ EnemyState_TransistionTime := [EnemyState]f64 {
 }
 
 EnemyState_UpdateProcs := [EnemyState]proc(enemy: ^Enemy, dt: f64) {
-    .APPROACH = UpdateEnemy_Approach,
+    .APPROACH = UpdateEnemy_Engage,
     .ENGAGE = UpdateEnemy_Engage,
-    .FLEE = UpdateEnemy_Approach, // does the same thing for now -- just moves in the current direction
+    .FLEE = UpdateEnemy_Engage, // does the same thing for now -- just moves in the current direction
 }
 
 Enemy :: struct {
@@ -43,25 +44,24 @@ Enemy :: struct {
 
     sprite: SpriteInfo,
 
-    facing: Dir,
-
     state             : EnemyState,
     state_trans_cd    : f64,
     
-    engage_dir_change_cd: f64,
     engage_shoot_cd     : f64,
+
+    total_t: f64,
+    move_path: ^physics2d.Spline,
 }
 
-CreateEnemy :: proc(at: physics2d.Vec2, initial_dir: Dir) -> Enemy {
+CreateEnemy :: proc(at: physics2d.Vec2, path: ^physics2d.Spline) -> Enemy {
     return Enemy {
         loc = at,
         dimensions = { f64(ENEMY_SPRITE.t_w), f64(ENEMY_SPRITE.t_h) },
         
-        dir = VecFor(initial_dir),
+        dir = { 0, 0 },
         speed = ENEMY_MOVE_SPEED,
 
         sprite = ENEMY_SPRITE,
-        facing = initial_dir,
 
         update = proc(self: ^lib.GameObject, dt: f64) {
             UpdateEnemy(cast(^Enemy)self, dt)
@@ -72,12 +72,16 @@ CreateEnemy :: proc(at: physics2d.Vec2, initial_dir: Dir) -> Enemy {
 
         state = EnemyState.APPROACH,
         state_trans_cd = EnemyState_TransistionTime[EnemyState.APPROACH],
+
+        total_t = 0,
+        move_path = path,
     }
 }
 
 UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
     state_trans_cd -= dt
+    total_t += dt
 
     should_transition := (state_trans_cd <= 0)
     
@@ -92,20 +96,6 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
                 state_trans_cd = EnemyState_TransistionTime[EnemyState.FLEE]
 
                 speed = u32( f64(speed) * 2.5 )
-
-                // ensure we're not `.Stationary` right now
-                new_dir := facing
-                #partial switch facing {
-                    case .Stationary:
-                        new_dir = Dir.North
-                    case .South, .SouthEast, .SouthWest:
-                        new_dir = ReverseDir(facing)
-                    case .East:
-                        new_dir = Dir.NorthEast
-                    case .West:
-                        new_dir = Dir.NorthWest
-                }
-                ChangeEnemyDirection(enemy, new_dir)
             }
             case .FLEE: {
                 destroyed = true
@@ -114,8 +104,9 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
     }
 
     updateProc := EnemyState_UpdateProcs[state]
-
     updateProc(enemy, dt)
+
+    if state == EnemyState.APPROACH do return
 
     window_bounds := (cast(^SpaceShooterAPI)enemy.api)->windowBB()
     bb := lib.GetBoundingBox(cast(^lib.GameObject)enemy)
@@ -136,12 +127,6 @@ DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {
     )
 }
 
-ChangeEnemyDirection :: proc(enemy: ^Enemy, new_dir: Dir) {
-    using enemy
-    dir = VecFor(new_dir)
-    facing = new_dir
-}
-
 UpdateEnemy_Approach :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
 
@@ -151,43 +136,28 @@ UpdateEnemy_Approach :: proc(enemy: ^Enemy, dt: f64) {
 UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
 
-    if engage_dir_change_cd <= 0 {
-        engage_dir_change_cd = ENEMY_DIR_ROC
-        new_dir := RandomDir()
-        ChangeEnemyDirection(enemy, new_dir)
-    }
     if engage_shoot_cd <= 0 {
         engage_shoot_cd = ENEMY_ROF
-        bb := lib.GetBoundingBox(enemy)
-        center := bb->getCenter()
-        
-        proj := CreateProjectile(center, VecFor(Dir.South), false)
-        proj.speed = u32(f64(proj.speed) * ENEMY_PROJ_SPEED_MOD)
-        (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+
+        roll := rand.float64()
+        if ENEMY_SHOT_CHANCE >= roll {
+            bb := lib.GetBoundingBox(enemy)
+            center := bb->getCenter()
+            
+            proj := CreateProjectile(center, VecFor(Dir.South), false)
+            proj.speed = u32(f64(proj.speed) * ENEMY_PROJ_SPEED_MOD)
+            (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+        }
     }
 
-    engage_dir_change_cd -= dt
     engage_shoot_cd -= dt
     
+    dist := f64(speed) * total_t
+    if dist > f64(move_path->length()) do return
     
-    window_bounds := (cast(^SpaceShooterAPI)api)->windowBB()
-    window_bounds.dimensions.h = ((window_bounds.dimensions.h/4) * 3)
-    
-    lib.MoveWithin(cast(^lib.GameObject)enemy, window_bounds, dt)
-
-    // try to avoid hugging edges or getting too low on the screen
-    // ( at least for too long )
-    buffer :: 20 // px
-    switch {
-        case dir.x <= 0 && loc.x                     < f64(window_bounds.origin.x + buffer)                    :
-            fallthrough
-        case dir.x >= 0 && loc.x + f64(dimensions.w) > f64(window_bounds.origin.x + window_bounds.dimensions.w + buffer)  :
-            fallthrough
-        case dir.y <= 0 && loc.y                     < f64(window_bounds.origin.y + buffer)                    :
-            fallthrough
-        case dir.y <= 0 && loc.y + f64(dimensions.h) > f64(window_bounds.origin.y + window_bounds.dimensions.h + buffer)  :
-            engage_dir_change_cd -= (dt * 10)
-    }
+    new_loc := move_path->pointAt(dist)
+    loc.x = new_loc.x
+    loc.y = new_loc.y
 }
 
 EnemeyDestroyed :: proc(enemy: ^Enemy) {
