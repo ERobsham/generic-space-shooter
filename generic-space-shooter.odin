@@ -64,6 +64,7 @@ main :: proc() {
         // DrawRect(renderer, i32(mX), i32(mY))
 
         DrawSpline(&testSpline, renderer)
+        DrawSpline(&testSpline2, renderer)
 
         // present the scene
         sdl2.RenderPresent(renderer)
@@ -95,6 +96,7 @@ testSplinePoints := []physics2d.Vec2{
 }
 
 testSpline := physics2d.NewSpline(testSplinePoints)
+testSpline2 := physics2d.SplineFlippedHorizontally(&testSpline, f64(space_shooter.W_WIDTH) )
 
 DrawSpline :: proc(s: ^physics2d.Spline, renderer: ^sdl2.Renderer) {
     sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)

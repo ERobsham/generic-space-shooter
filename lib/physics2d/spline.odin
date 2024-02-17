@@ -71,3 +71,14 @@ getPointAt :: proc(spline: ^Spline, t: f64) -> Vec2 {
         return Vec2{ pt.x, pt.y }
     }
 }
+
+SplineFlippedHorizontally :: proc(s: ^Spline, window_width: f64) -> Spline {
+    flipped_pts := make([dynamic]Vec2, 0, len(s.ctl_points))
+    defer delete(flipped_pts)
+
+    for pt in s.ctl_points {
+        append(&flipped_pts, Vec2{ window_width - pt.x, pt.y })
+    }
+
+    return NewSpline(flipped_pts[:])
+}
