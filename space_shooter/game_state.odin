@@ -1,18 +1,13 @@
 package space_shooter
 
+import "core:fmt"
+import "core:math/rand"
 import "vendor:sdl2"
 
 import "../lib"
 import "../lib/collision"
 
-SpaceShooterAPI :: struct {
-    using gsAPI   : lib.GameStateAPI,
-    addEnemy      : proc(self: ^SpaceShooterAPI, enemy: Enemy),
-    addProjectile : proc(self: ^SpaceShooterAPI, proj: Projectile),
-    addPowerup    : proc(self: ^SpaceShooterAPI, powerup: lib.GameObject),
-    addMisc       : proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject),
-    windowBB      : proc(self: ^SpaceShooterAPI) -> collision.BoundingBox,
-}
+POWERUP_SPAWN_CHANCE :f64: 1.0/10.0
 
 GameState :: struct {
     using api : SpaceShooterAPI,
@@ -23,7 +18,7 @@ GameState :: struct {
     player      : Player,
     enemies     : [dynamic]Enemy,
     projectiles : [dynamic]Projectile,
-    powerUps    : [dynamic]lib.GameObject,
+    powerups    : [dynamic]Powerup,
     misc_objs   : [dynamic]^lib.GameObject,
 
     // systems
@@ -42,7 +37,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.addProjectile = proc(self: ^SpaceShooterAPI, proj: Projectile) {
         AddProjectile(cast(^GameState)self, proj)
     }
-    s.addPowerup = proc(self: ^SpaceShooterAPI, powerup: lib.GameObject) {
+    s.addPowerup = proc(self: ^SpaceShooterAPI, powerup: Powerup) {
         AddPowerup(cast(^GameState)self, powerup)
     }
     s.addMisc = proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject) {
@@ -59,7 +54,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.player.api = s
     s.enemies       = make([dynamic]Enemy, 0, 20)
     s.projectiles   = make([dynamic]Projectile, 0, 20)
-    s.powerUps      = make([dynamic]lib.GameObject, 0, 20)
+    s.powerups      = make([dynamic]Powerup, 0, 20)
     s.misc_objs     = make([dynamic]^lib.GameObject, 0, 20)
 
     s.enemy_spawner = NewEnemySpawner(s)
@@ -116,6 +111,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
                 if proj_bb->isColliding(enemy_bb) {
                     proj.destroyed = true
                     EnemeyDestroyed(&enemy)
+                    maybeSpawnPowerup(s, &enemy_bb)
                     break
                 }
             }
@@ -126,6 +122,19 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
                 PlayerDestroyed(&player)
                 break
             }
+        }
+    }
+    for &powerup in powerups {
+        powerup->update(dt)
+
+        if powerup.destroyed do continue
+
+        powerup_bb := lib.GetBoundingBox(&powerup)
+        if powerup_bb->isColliding(player_bb) {
+            powerup.destroyed = true
+            // TODO: power up player
+            ApplyPowerupToPlayer(&player, powerup.type)
+            break
         }
     }
 
@@ -147,6 +156,10 @@ DrawGameState :: proc(s: ^GameState, renderer: ^sdl2.Renderer) {
         if proj.destroyed do continue
         proj->draw(renderer)
     }
+    for &powerup in powerups {
+        if powerup.destroyed do continue
+        powerup->draw(renderer)
+    }
     
     for &misc_obj in misc_objs {
         if misc_obj.destroyed do continue
@@ -154,7 +167,7 @@ DrawGameState :: proc(s: ^GameState, renderer: ^sdl2.Renderer) {
     }
 }
 
-PostDrawCleanup :: proc (s: ^GameState) {
+PostDrawCleanup :: proc(s: ^GameState) {
     using s
     
     // remove any 'destroyed' objects
@@ -170,6 +183,12 @@ PostDrawCleanup :: proc (s: ^GameState) {
             i-=1
         }
     }
+    for i := 0; i < len(powerups); i += 1 {
+        if powerups[i].destroyed {
+            unordered_remove(&powerups, i)
+            i-=1
+        }
+    }
 
 
     for i := 0; i < len(misc_objs); i += 1 {
@@ -181,30 +200,12 @@ PostDrawCleanup :: proc (s: ^GameState) {
     }
 }
 
-
-//
-// space shooter 'API' methods
-//
-
-AddEnemy :: proc(api: ^GameState, enemy: Enemy) {
-    e := enemy
-    e.api = api
-    append(&api.enemies, e)
-}
-
-AddProjectile :: proc(api: ^GameState, proj: Projectile) {
-    p := proj
-    p.api = api
-    append(&api.projectiles, p)
-}
-
-AddPowerup :: proc(api: ^GameState, power_up: lib.GameObject) {
-    p := power_up
-    p.api = api
-    append(&api.powerUps, p)
-}
-
-AddMisc :: proc(api: ^GameState, misc: ^lib.GameObject) {
-    misc.api = api
-    append(&api.misc_objs, misc)
+maybeSpawnPowerup :: proc(s: ^GameState, bb: ^collision.BoundingBox) {
+    roll := rand.float64()
+    if roll > POWERUP_SPAWN_CHANCE do return
+    
+    type := rand.choice(powerupTypes)
+    center := bb->getCenter()
+    pu := CreatePowerup(center, type)
+    s->addPowerup(pu)
 }
