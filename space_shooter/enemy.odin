@@ -33,12 +33,6 @@ EnemyState_TransistionTime := [EnemyState]f64 {
     .FLEE = 10,
 }
 
-EnemyState_UpdateProcs := [EnemyState]proc(enemy: ^Enemy, dt: f64) {
-    .APPROACH = UpdateEnemy_Engage,
-    .ENGAGE = UpdateEnemy_Engage,
-    .FLEE = UpdateEnemy_Engage, // does the same thing for now -- just moves in the current direction
-}
-
 Enemy :: struct {
     using gObj: lib.GameObject,
 
@@ -54,6 +48,7 @@ Enemy :: struct {
 }
 
 CreateEnemy :: proc(at: physics2d.Vec2, path: ^physics2d.Spline) -> Enemy {
+    roll := rand.float64()
     return Enemy {
         loc = at,
         dimensions = { f64(ENEMY_SPRITE.t_w), f64(ENEMY_SPRITE.t_h) },
@@ -73,6 +68,8 @@ CreateEnemy :: proc(at: physics2d.Vec2, path: ^physics2d.Spline) -> Enemy {
         state = EnemyState.APPROACH,
         state_trans_cd = EnemyState_TransistionTime[EnemyState.APPROACH],
 
+        engage_shoot_cd = ENEMY_ROF * roll,
+
         total_t = 0,
         move_path = path,
     }
@@ -80,12 +77,9 @@ CreateEnemy :: proc(at: physics2d.Vec2, path: ^physics2d.Spline) -> Enemy {
 
 UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
-    state_trans_cd -= dt
-    total_t += dt
-
-    should_transition := (state_trans_cd <= 0)
     
-    if should_transition {
+    state_trans_cd -= dt
+    if state_trans_cd <= 0 {
         switch state {
             case .APPROACH: {
                 state = EnemyState.ENGAGE
@@ -103,10 +97,10 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
         }
     }
 
-    updateProc := EnemyState_UpdateProcs[state]
-    updateProc(enemy, dt)
-
+    UpdateEnemy_Move(enemy, dt)
     if state == EnemyState.APPROACH do return
+
+    UpdateEnemy_Engage(enemy, dt)
 
     window_bounds := (cast(^SpaceShooterAPI)enemy.api)->windowBB()
     bb := lib.GetBoundingBox(cast(^lib.GameObject)enemy)
@@ -127,15 +121,23 @@ DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {
     )
 }
 
-UpdateEnemy_Approach :: proc(enemy: ^Enemy, dt: f64) {
+UpdateEnemy_Move :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
 
-    lib.Move(cast(^lib.GameObject)enemy, dt)
+    total_t += dt
+
+    dist := f64(speed) * total_t
+    if dist > f64(move_path->length()) do return
+    
+    new_loc := move_path->pointAt(dist)
+    loc.x = new_loc.x
+    loc.y = new_loc.y
 }
 
 UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     using enemy
 
+    engage_shoot_cd -= dt
     if engage_shoot_cd <= 0 {
         engage_shoot_cd = ENEMY_ROF
 
@@ -149,15 +151,6 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
             (cast(^SpaceShooterAPI)api)->addProjectile(proj)
         }
     }
-
-    engage_shoot_cd -= dt
-    
-    dist := f64(speed) * total_t
-    if dist > f64(move_path->length()) do return
-    
-    new_loc := move_path->pointAt(dist)
-    loc.x = new_loc.x
-    loc.y = new_loc.y
 }
 
 EnemeyDestroyed :: proc(enemy: ^Enemy) {

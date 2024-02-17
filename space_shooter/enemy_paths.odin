@@ -3,6 +3,7 @@ package space_shooter
 import "../lib/physics2d"
 
 enemeyPathSplinePoints1 := []physics2d.Vec2{
+    {350, -50},
     {120, -50},
     {120, 0},
     {80, 220},
