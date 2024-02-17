@@ -6,11 +6,8 @@ import "core:math"
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/collision"
-import "../lib/move"
 import "../lib/deltaT"
-
-import "input"
+import "../lib/physics2d"
 
 
 PLAYER_SPRITE :: SpriteInfo {
@@ -44,7 +41,7 @@ Player :: struct {
     processKeyboardInput: proc(self: ^Player, keyboard_state: [^]u8),
 
     sprite: SpriteInfo,
-    facing: move.Dir,
+    facing: Dir,
     
     shot_cooldown: f64,
     rof_mod      : f64,
@@ -55,8 +52,8 @@ Player :: struct {
 }
 
 shotOrigin :: struct {
-    offset: move.Vec2,
-    dir: move.Dir,
+    offset: physics2d.Vec2,
+    dir: Dir,
 }
 
 InitPlayer :: proc() -> Player {
@@ -65,10 +62,10 @@ InitPlayer :: proc() -> Player {
         dir = { 0, 0 },
         speed = PLAYER_MOVE_SPEED,
         
-        dimensions= { PLAYER_SPRITE.t_w, PLAYER_SPRITE.t_h },
+        dimensions= { f64(PLAYER_SPRITE.t_w), f64(PLAYER_SPRITE.t_h) },
 
         sprite = PLAYER_SPRITE,
-        facing = move.Dir.North,
+        facing = Dir.North,
 
         processKeyboardInput = ProcessPlayerInput,
 
@@ -92,10 +89,10 @@ InitPlayer :: proc() -> Player {
 ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
     using player
     
-    move_dir := input.GetMoveDir(keyboard_state)
-    dir = move.VecFor(move_dir)
+    move_dir := GetMoveDir(keyboard_state)
+    dir = VecFor(move_dir)
 
-    shooting := input.GetShootingState(keyboard_state)
+    shooting := GetShootingState(keyboard_state)
     if shooting && shot_cooldown <= 0 {
         shot_cooldown = 1.0 / (PLAYER_ROF * rof_mod)
         GeneratePlayerProjectiles(player)
@@ -139,13 +136,13 @@ GeneratePlayerProjectiles :: proc(player: ^Player) {
     for i := u8(0 + offset); i <= (multi_shot + offset); i += 1 {
         shot_origin := playerProjOrigins[i]
         
-        shot_loc := move.Vec2 {
+        shot_loc := physics2d.Vec2 {
             loc.x + shot_origin.offset.x,
             loc.y + shot_origin.offset.y,
         }
         
         // we want more like NNE/NNW, so make some custom adjustments for now.
-        shot_dir := move.VecFor(shot_origin.dir)
+        shot_dir := VecFor(shot_origin.dir)
         if shot_dir.x > 0 {
             shot_dir = { +1/math.SQRT_FIVE, -2/math.SQRT_FIVE }
         } 

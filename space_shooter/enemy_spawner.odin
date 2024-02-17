@@ -2,7 +2,7 @@ package space_shooter
 
 import "core:math/rand"
 
-import "../lib/move"
+import "../lib/physics2d"
 
 SPAWN_RATE  :: 1.0/1.0
 MAX_ENEMIES :: 10
@@ -37,14 +37,14 @@ RunSpawner :: proc(self: ^EnemySpawner, dt: f64) {
 
         bb := api->windowBB()
 
-        x_rand := rand.float64_range(0, f64(bb.w-ENEMY_SPRITE.t_w))
+        x_rand := rand.float64_range(0, bb.dimensions.w - f64(ENEMY_SPRITE.t_w))
 
-        inital_loc := move.Vec2{
+        inital_loc := physics2d.Vec2{
             x = x_rand,
             y = f64(-1 * ENEMY_SPRITE.t_h),
         }
 
-        e := CreateEnemy(inital_loc, move.Dir.South)
+        e := CreateEnemy(inital_loc, Dir.South)
         api->addEnemy(e)
     }
 }

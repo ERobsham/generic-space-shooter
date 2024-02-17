@@ -5,14 +5,14 @@ import "core:math/rand"
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/collision"
+import "../lib/physics2d"
 
 POWERUP_SPAWN_CHANCE :f64: 1.0/10.0
 
 GameState :: struct {
     using api : SpaceShooterAPI,
 
-    window_bounds : collision.BoundingBox,
+    window_bounds : physics2d.BoundingBox,
 
     // game objects
     player      : Player,
@@ -43,7 +43,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.addMisc = proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject) {
         AddMisc(cast(^GameState)self, misc)
     }
-    s.windowBB = proc(self: ^SpaceShooterAPI) -> collision.BoundingBox {
+    s.windowBB = proc(self: ^SpaceShooterAPI) -> physics2d.BoundingBox {
         bb := (cast(^GameState)self).window_bounds
         return bb
     }
@@ -200,7 +200,7 @@ PostDrawCleanup :: proc(s: ^GameState) {
     }
 }
 
-maybeSpawnPowerup :: proc(s: ^GameState, bb: ^collision.BoundingBox) {
+maybeSpawnPowerup :: proc(s: ^GameState, bb: ^physics2d.BoundingBox) {
     roll := rand.float64()
     if roll > POWERUP_SPAWN_CHANCE do return
     

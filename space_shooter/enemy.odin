@@ -3,8 +3,7 @@ package space_shooter
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/move"
-import "../lib/collision"
+import "../lib/physics2d"
 
 ENEMY_SPRITE :: SpriteInfo {
     ss_idx = 0,
@@ -44,7 +43,7 @@ Enemy :: struct {
 
     sprite: SpriteInfo,
 
-    facing: move.Dir,
+    facing: Dir,
 
     state             : EnemyState,
     state_trans_cd    : f64,
@@ -53,12 +52,12 @@ Enemy :: struct {
     engage_shoot_cd     : f64,
 }
 
-CreateEnemy :: proc(at: move.Vec2, initial_dir: move.Dir) -> Enemy {
+CreateEnemy :: proc(at: physics2d.Vec2, initial_dir: Dir) -> Enemy {
     return Enemy {
         loc = at,
-        dimensions = { ENEMY_SPRITE.t_w, ENEMY_SPRITE.t_h },
+        dimensions = { f64(ENEMY_SPRITE.t_w), f64(ENEMY_SPRITE.t_h) },
         
-        dir = move.VecFor(initial_dir),
+        dir = VecFor(initial_dir),
         speed = ENEMY_MOVE_SPEED,
 
         sprite = ENEMY_SPRITE,
@@ -98,13 +97,13 @@ UpdateEnemy :: proc(enemy: ^Enemy, dt: f64) {
                 new_dir := facing
                 #partial switch facing {
                     case .Stationary:
-                        new_dir = move.Dir.North
+                        new_dir = Dir.North
                     case .South, .SouthEast, .SouthWest:
-                        new_dir = move.ReverseDir(facing)
+                        new_dir = ReverseDir(facing)
                     case .East:
-                        new_dir = move.Dir.NorthEast
+                        new_dir = Dir.NorthEast
                     case .West:
-                        new_dir = move.Dir.NorthWest
+                        new_dir = Dir.NorthWest
                 }
                 ChangeEnemyDirection(enemy, new_dir)
             }
@@ -137,9 +136,9 @@ DrawEnemy :: proc(enemy: ^Enemy, renderer: ^sdl2.Renderer) {
     )
 }
 
-ChangeEnemyDirection :: proc(enemy: ^Enemy, new_dir: move.Dir) {
+ChangeEnemyDirection :: proc(enemy: ^Enemy, new_dir: Dir) {
     using enemy
-    dir = move.VecFor(new_dir)
+    dir = VecFor(new_dir)
     facing = new_dir
 }
 
@@ -154,7 +153,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
 
     if engage_dir_change_cd <= 0 {
         engage_dir_change_cd = ENEMY_DIR_ROC
-        new_dir := move.RandomDir()
+        new_dir := RandomDir()
         ChangeEnemyDirection(enemy, new_dir)
     }
     if engage_shoot_cd <= 0 {
@@ -162,7 +161,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
         bb := lib.GetBoundingBox(enemy)
         center := bb->getCenter()
         
-        proj := CreateProjectile(center, move.VecFor(move.Dir.South), false)
+        proj := CreateProjectile(center, VecFor(Dir.South), false)
         proj.speed = u32(f64(proj.speed) * ENEMY_PROJ_SPEED_MOD)
         (cast(^SpaceShooterAPI)api)->addProjectile(proj)
     }
@@ -172,7 +171,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     
     
     window_bounds := (cast(^SpaceShooterAPI)api)->windowBB()
-    window_bounds.h = ((window_bounds.h/4) * 3)
+    window_bounds.dimensions.h = ((window_bounds.dimensions.h/4) * 3)
     
     lib.MoveWithin(cast(^lib.GameObject)enemy, window_bounds, dt)
 
@@ -180,13 +179,13 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
     // ( at least for too long )
     buffer :: 20 // px
     switch {
-        case dir.x <= 0 && loc.x                     < f64(window_bounds.x + buffer)                    :
+        case dir.x <= 0 && loc.x                     < f64(window_bounds.origin.x + buffer)                    :
             fallthrough
-        case dir.x >= 0 && loc.x + f64(dimensions.w) > f64(window_bounds.x + window_bounds.w + buffer)  :
+        case dir.x >= 0 && loc.x + f64(dimensions.w) > f64(window_bounds.origin.x + window_bounds.dimensions.w + buffer)  :
             fallthrough
-        case dir.y <= 0 && loc.y                     < f64(window_bounds.y + buffer)                    :
+        case dir.y <= 0 && loc.y                     < f64(window_bounds.origin.y + buffer)                    :
             fallthrough
-        case dir.y <= 0 && loc.y + f64(dimensions.h) > f64(window_bounds.y + window_bounds.h + buffer)  :
+        case dir.y <= 0 && loc.y + f64(dimensions.h) > f64(window_bounds.origin.y + window_bounds.dimensions.h + buffer)  :
             engage_dir_change_cd -= (dt * 10)
     }
 }

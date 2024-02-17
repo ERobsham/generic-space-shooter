@@ -1,8 +1,6 @@
-package input
+package space_shooter
 
 import "vendor:sdl2"
-import "../../lib/move"
-
 
 UP_KEYS :: []sdl2.Scancode{
     sdl2.Scancode.UP,
@@ -21,8 +19,8 @@ LEFT_KEYS :: []sdl2.Scancode{
     sdl2.Scancode.A,
 }
 
-@(private)
-movementKeys := #partial [move.Dir][]sdl2.Scancode {
+@(private="file")
+movementKeys := #partial [Dir][]sdl2.Scancode {
     .North = UP_KEYS,
     .East = RIGHT_KEYS,
     .South = DOWN_KEYS,
@@ -30,8 +28,7 @@ movementKeys := #partial [move.Dir][]sdl2.Scancode {
 }
 
 // expects the result of 'sdl2.GetKeyboardState(..)' as its argument
-GetMoveDir :: proc(keyboard_state : [^]u8) -> move.Dir {
-    using move
+GetMoveDir :: proc(keyboard_state : [^]u8) -> Dir {
     
     up_down := 0
     left_right := 0

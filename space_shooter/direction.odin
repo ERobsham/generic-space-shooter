@@ -1,13 +1,11 @@
-package move
+package space_shooter
 
 import "core:math"
 import "core:math/rand"
 
-SQRT2 :: math.SQRT_TWO
+import "../lib/physics2d"
 
-Vec2 :: struct {
-    x,y : f64
-}
+SQRT2 :: math.SQRT_TWO
 
 Dir :: enum {
     Stationary,
@@ -22,7 +20,7 @@ Dir :: enum {
 }
 
 @(private)
-dirToMoveVecMap := [Dir]Vec2 {
+dirToMoveVecMap := [Dir]physics2d.Vec2 {
     .Stationary = {  0,          0       },
     .North      = {  0,         -1       },
     .NorthEast  = { +1/SQRT2,   -1/SQRT2 },
@@ -34,6 +32,7 @@ dirToMoveVecMap := [Dir]Vec2 {
     .NorthWest  = { -1/SQRT2,   -1/SQRT2 },
 }
 
+@(private)
 dirReverseMap := [Dir]Dir {
     .Stationary = .Stationary,
     .North      = .South,
@@ -46,9 +45,9 @@ dirReverseMap := [Dir]Dir {
     .NorthWest  = .SouthEast,
 }
 
-VecFor :: proc(dir: Dir) -> Vec2 {
+VecFor :: proc(dir: Dir) -> physics2d.Vec2 {
     move_vec := dirToMoveVecMap[dir]
-    return Vec2{
+    return physics2d.Vec2{
         move_vec.x,
         move_vec.y,
     }

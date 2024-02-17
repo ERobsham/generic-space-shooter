@@ -3,7 +3,7 @@ package space_shooter
 import "vendor:sdl2"
 import "vendor:sdl2/image"
 
-import "../lib/collision"
+import "../lib/physics2d"
 
 // 512x512 sprite sheet w/ 64x64 chunks (ie 8x8 sprites total)
 SPRITESHEET_DIM     :: 64
@@ -42,7 +42,7 @@ DestroySpriteSheets :: proc() {
     }
 }
 
-DrawSprite :: proc(renderer: ^sdl2.Renderer, from: SpriteInfo, to: collision.BoundingBox) {
+DrawSprite :: proc(renderer: ^sdl2.Renderer, from: SpriteInfo, to: physics2d.BoundingBox) {
     assert(sprite_sheets != nil, "sprite sheets not initialized")
     assert(int(from.ss_idx) < len(sprite_sheets), "invalid sprite sheet index")
 
@@ -52,7 +52,10 @@ DrawSprite :: proc(renderer: ^sdl2.Renderer, from: SpriteInfo, to: collision.Bou
         from.t_w, 
         from.t_h,
     }
-    dest := sdl2.Rect{to.x, to.y, to.w, to.h}
+    dest := sdl2.Rect{
+        i32(to.origin.x),     i32(to.origin.y), 
+        i32(to.dimensions.w), i32(to.dimensions.h),
+    }
 
     sdl2.RenderCopy(renderer, sprite_sheets[from.ss_idx], &src, &dest)
 }

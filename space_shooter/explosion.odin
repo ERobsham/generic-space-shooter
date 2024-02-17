@@ -3,8 +3,7 @@ package space_shooter
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/move"
-import "../lib/collision"
+import "../lib/physics2d"
 
 EXPLOSION_SPRITE :: SpriteInfo {
     ss_idx = 0,
@@ -26,15 +25,16 @@ Explosion :: struct {
     stage_cd: f64,
 }
 
-CreateExplosionPtr :: proc(at: move.Vec2) -> ^Explosion {
+// creates a pointer to a 'new' explosion object -- ie, must be freed.
+CreateExplosionPtr :: proc(at: physics2d.Vec2) -> ^Explosion {
     e := new(Explosion)
         
     e.loc = at
-    e.dimensions = { EXPLOSION_SPRITE.t_w, EXPLOSION_SPRITE.t_h }
+    e.dimensions = { f64(EXPLOSION_SPRITE.t_w), f64(EXPLOSION_SPRITE.t_h) }
     e.loc.x -= (f64(EXPLOSION_SPRITE.t_w) / 2)
     e.loc.y -= (f64(EXPLOSION_SPRITE.t_h) / 2)
     
-    e.dir = move.VecFor(move.Dir.Stationary)
+    e.dir = VecFor(Dir.Stationary)
     e.speed = 0
 
     e.sprite = EXPLOSION_SPRITE

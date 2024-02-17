@@ -1,7 +1,7 @@
 package space_shooter
 
 import "../lib"
-import "../lib/collision"
+import "../lib/physics2d"
 
 SpaceShooterAPI :: struct {
     using gsAPI   : lib.GameStateAPI,
@@ -9,7 +9,7 @@ SpaceShooterAPI :: struct {
     addProjectile : proc(self: ^SpaceShooterAPI, proj: Projectile),
     addPowerup    : proc(self: ^SpaceShooterAPI, powerup: Powerup),
     addMisc       : proc(self: ^SpaceShooterAPI, misc: ^lib.GameObject),
-    windowBB      : proc(self: ^SpaceShooterAPI) -> collision.BoundingBox,
+    windowBB      : proc(self: ^SpaceShooterAPI) -> physics2d.BoundingBox,
 }
 
 //

@@ -3,8 +3,7 @@ package space_shooter
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/move"
-import "../lib/collision"
+import "../lib/physics2d"
 
 PROJECTILE_SPRITE :: SpriteInfo {
     ss_idx = 0,
@@ -24,10 +23,10 @@ Projectile :: struct {
     is_friendly: bool,
 }
 
-CreateProjectile :: proc(at: move.Vec2, dir: move.Vec2, is_friendly: bool = true) -> Projectile {
+CreateProjectile :: proc(at: physics2d.Vec2, dir: physics2d.Vec2, is_friendly: bool = true) -> Projectile {
     p := Projectile{
         loc = at,
-        dimensions = { PROJECTILE_SPRITE.t_w, PROJECTILE_SPRITE.t_h },
+        dimensions = { f64(PROJECTILE_SPRITE.t_w), f64(PROJECTILE_SPRITE.t_h) },
         
         dir = dir,
         speed = PROJECTILE_SPEED,

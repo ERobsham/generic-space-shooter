@@ -4,8 +4,7 @@ import "core:fmt"
 import "vendor:sdl2"
 
 import "../lib"
-import "../lib/move"
-import "../lib/collision"
+import "../lib/physics2d"
 
 POWERUP_SPRITE_Multishot :: SpriteInfo {
     ss_idx = 0,
@@ -55,14 +54,14 @@ Powerup :: struct {
     type: PowerupType,
 }
 
-CreatePowerup :: proc(at: move.Vec2, type: PowerupType) -> Powerup {
+CreatePowerup :: proc(at: physics2d.Vec2, type: PowerupType) -> Powerup {
     sprite := powerupSpriteByType[type]
     
     p := Powerup{
         loc = at,
-        dimensions = { sprite.t_w, sprite.t_h },
+        dimensions = { f64(sprite.t_w), f64(sprite.t_h) },
         
-        dir = move.VecFor(move.Dir.South),
+        dir = VecFor(Dir.South),
         speed = POWERUP_SPEED,
         
         type = type,
@@ -75,8 +74,8 @@ CreatePowerup :: proc(at: move.Vec2, type: PowerupType) -> Powerup {
         },
     }
 
-    p.loc.x -= (f64(p.dimensions.w) / 2)
-    p.loc.y -= (f64(p.dimensions.h) / 2)
+    p.loc.x -= p.dimensions.w / 2
+    p.loc.y -= p.dimensions.h / 2
 
     return p
 }
