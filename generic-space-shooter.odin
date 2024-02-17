@@ -5,6 +5,7 @@ import "vendor:sdl2"
 import "vendor:sdl2/image"
 
 import "lib/deltaT"
+import "lib/physics2d"
 
 import "space_shooter"
 
@@ -62,6 +63,8 @@ main :: proc() {
         // sdl2.GetMouseState(&mX, &mY)
         // DrawRect(renderer, i32(mX), i32(mY))
 
+        DrawSpline(&testSpline, renderer)
+
         // present the scene
         sdl2.RenderPresent(renderer)
 
@@ -75,6 +78,44 @@ ClearRender :: proc(renderer: ^sdl2.Renderer) {
     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
 }
 
+
+testSplinePoints := []physics2d.Vec2{
+    {120, -50},
+    {120, 0},
+    {80, 220},
+    {180, 380},
+    {480, 480},
+    {660, 340},
+    {580, 200},
+    {420, 320},
+    {320, 220},
+    {460, 120},
+    {600, 0},
+    {600, -50},
+}
+
+testSpline := physics2d.NewSpline(testSplinePoints)
+
+DrawSpline :: proc(s: ^physics2d.Spline, renderer: ^sdl2.Renderer) {
+    sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
+
+    granularity :: 500
+    spline_len := s->length()
+    step_size := f64(spline_len) / f64(granularity)
+    
+    pts := [granularity]sdl2.FPoint {}
+    for i := 0; i < granularity; i += 1 {
+        t := f64(i) * step_size
+        pt := s->pointAt(t)
+        pts[i].x = f32(pt.x)
+        pts[i].y = f32(pt.y)
+    }
+
+    pt_ptr := &pts
+    sdl2.RenderDrawLinesF(renderer, cast([^]sdl2.FPoint)pt_ptr, granularity)
+
+    sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
+}
 
 // helper to draw rect around mouse
 // DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
