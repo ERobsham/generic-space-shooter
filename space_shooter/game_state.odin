@@ -29,6 +29,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     InitSpriteSheets(renderer, {
         "assets/player.png", // ssIdx == 0
     })
+    InitAudio()
 
     s := new(GameState)
     s.addEnemy = proc(self: ^SpaceShooterAPI, enemy: Enemy) {
@@ -64,6 +65,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
 
 DestroyGameState :: proc(s: ^GameState) {
     DestroySpriteSheets()
+    DestroyAudio()
 
     delete(s.enemies)
     delete(s.projectiles)

@@ -3,6 +3,7 @@ package main
 import "core:c"
 import "vendor:sdl2"
 import "vendor:sdl2/image"
+import "vendor:sdl2/mixer"
 
 import "lib/deltaT"
 import "lib/physics2d"
@@ -18,6 +19,9 @@ main :: proc() {
 
     image.Init(image.INIT_PNG)
     defer image.Quit()
+
+    mixer.Init(mixer.INIT_FLAC)
+    defer mixer.Quit()
     
     window := sdl2.CreateWindow(
         space_shooter.W_TITLE, 

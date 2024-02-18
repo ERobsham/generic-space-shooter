@@ -149,6 +149,7 @@ UpdateEnemy_Engage :: proc(enemy: ^Enemy, dt: f64) {
             proj := CreateProjectile(center, VecFor(Dir.South), false)
             proj.speed = u32(f64(proj.speed) * ENEMY_PROJ_SPEED_MOD)
             (cast(^SpaceShooterAPI)api)->addProjectile(proj)
+            PlayEffect(.Laser_Enemy)
         }
     }
 }
@@ -162,4 +163,6 @@ EnemeyDestroyed :: proc(enemy: ^Enemy) {
 
     expl := CreateExplosionPtr(center)
     (cast(^SpaceShooterAPI)api)->addMisc(expl)
+
+    PlayEffect(.Explosion)
 }

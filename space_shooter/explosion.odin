@@ -48,6 +48,8 @@ CreateExplosionPtr :: proc(at: physics2d.Vec2) -> ^Explosion {
     e.draw = proc(self: ^lib.GameObject, renderer: ^sdl2.Renderer) {
         DrawExplosion(cast(^Explosion)self, renderer)
     }
+
+    PlayEffect(.Explosion)
     
     return e
 }

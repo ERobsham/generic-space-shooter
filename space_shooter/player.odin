@@ -95,6 +95,7 @@ ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
     shooting := GetShootingState(keyboard_state)
     if shooting && shot_cooldown <= 0 {
         shot_cooldown = 1.0 / (PLAYER_ROF * rof_mod)
+        PlayEffect(.Laser_Player)
         GeneratePlayerProjectiles(player)
     }
 }
@@ -125,6 +126,8 @@ PlayerDestroyed :: proc(player: ^Player) {
 
     expl := CreateExplosionPtr(center)
     (cast(^SpaceShooterAPI)api)->addMisc(expl)
+
+    PlayEffect(.GameOver)
 }
 
 GeneratePlayerProjectiles :: proc(player: ^Player) {

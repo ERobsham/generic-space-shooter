@@ -123,4 +123,6 @@ ApplyPowerupToPlayer :: proc(player: ^Player, powerup: PowerupType) {
                 clamp(player.rof_mod + 0.2, 1.0, 5.0)
         }
     }
+
+    PlayEffect(.Powerup)
 }
