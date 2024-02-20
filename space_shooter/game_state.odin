@@ -63,12 +63,28 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     return s
 }
 
+ResetGameState :: proc(s:^GameState) {
+    ResetPlayer(&s.player)
+    ResetSpawner(&s.enemy_spawner)
+
+    for ; len(s.enemies) > 0;     do pop(&s.enemies)
+    for ; len(s.projectiles) > 0; do pop(&s.projectiles)
+    for ; len(s.powerups) > 0;    do pop(&s.powerups)
+    
+    for ; len(s.misc_objs) > 0; {
+        free(s.misc_objs[len(s.misc_objs) - 1])
+        pop(&s.powerups)
+    }
+}
+
 DestroyGameState :: proc(s: ^GameState) {
     DestroySpriteSheets()
     DestroyAudio()
 
     delete(s.enemies)
     delete(s.projectiles)
+
+    free(s)
 }
 
 ProcessKeyboardInput :: proc(s: ^GameState) {
@@ -91,6 +107,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
         enemy->update(dt)
 
         if enemy.destroyed do continue
+        if player.destroyed do continue
 
         enemy_bb := lib.GetBoundingBox(&enemy)
         if enemy_bb->isColliding(player_bb) {
@@ -200,6 +217,10 @@ PostDrawCleanup :: proc(s: ^GameState) {
             i-=1
         }
     }
+}
+
+IsGameOver :: proc(s: ^GameState) -> bool {
+    return s.player.destroyed
 }
 
 maybeSpawnPowerup :: proc(s: ^GameState, bb: ^physics2d.BoundingBox) {

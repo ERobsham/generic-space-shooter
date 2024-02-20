@@ -22,17 +22,20 @@ EnemySpawner :: struct {
 }
 
 NewEnemySpawner :: proc(api: ^SpaceShooterAPI) -> EnemySpawner {
-    return {
+    s := EnemySpawner {
         api = api,
-
-        spawn_rate = SPAWN_RATE,
-        cooldown = 3.0,  // initial cooldown before enemeis spawn
-
-        wave_spawns_remaining = ENEMIES_PER_WAVE,
-        wave = 1,
-
         update = RunSpawner,
     }
+    ResetSpawner(&s)
+    return s
+}
+
+ResetSpawner :: proc(s: ^EnemySpawner) {
+    s.spawn_rate = SPAWN_RATE
+    s.cooldown   = 3.0  // initial cooldown before enemeis spawn
+
+    s.wave_spawns_remaining = ENEMIES_PER_WAVE
+    s.wave                  = 1
 }
 
 RunSpawner :: proc(self: ^EnemySpawner, dt: f64) {

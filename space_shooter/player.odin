@@ -58,14 +58,8 @@ shotOrigin :: struct {
 
 InitPlayer :: proc() -> Player {
     p := Player{
-        loc = { (W_WIDTH  / 2), (W_HEIGHT / 2) * 1.25 },
-        dir = { 0, 0 },
-        speed = PLAYER_MOVE_SPEED,
-        
-        dimensions= { f64(PLAYER_SPRITE.t_w), f64(PLAYER_SPRITE.t_h) },
-
         sprite = PLAYER_SPRITE,
-        facing = Dir.North,
+        dimensions= { f64(PLAYER_SPRITE.t_w), f64(PLAYER_SPRITE.t_h) },
 
         processKeyboardInput = ProcessPlayerInput,
 
@@ -75,20 +69,32 @@ InitPlayer :: proc() -> Player {
         draw = proc(self: ^lib.GameObject, renderer: ^sdl2.Renderer) {
             DrawPlayer(cast(^Player)self, renderer)
         },
-
-        shot_cooldown = 0,
-        rof_mod       = 1.0,
-
-        multi_shot     = 0,
-        punch_through  = 0,
-        shot_speed_mod = 1.0,
     }
+    ResetPlayer(&p)
     return p
+}
+
+ResetPlayer :: proc(p:^Player) {
+    p.destroyed = false
+    
+    p.loc = { (W_WIDTH  / 2), (W_HEIGHT / 2) * 1.25 }
+    p.dir = { 0, 0 }
+
+    p.speed  = PLAYER_MOVE_SPEED
+    p.facing = Dir.North
+
+    p.shot_cooldown  = 0
+    p.rof_mod        = 1.0
+    p.multi_shot     = 0
+    p.punch_through  = 0
+    p.shot_speed_mod = 1.0
 }
 
 ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
     using player
     
+    if player.destroyed do return
+
     move_dir := GetMoveDir(keyboard_state)
     dir = VecFor(move_dir)
 
@@ -96,21 +102,22 @@ ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
     if shooting && shot_cooldown <= 0 {
         shot_cooldown = 1.0 / (PLAYER_ROF * rof_mod)
         PlayEffect(.Laser_Player)
-        GeneratePlayerProjectiles(player)
+        generatePlayerProjectiles(player)
     }
 }
 
 UpdatePlayer :: proc(player: ^Player, dt: f64) {
     using player
+    if destroyed do return
+
     lib.MoveWithin(cast(^lib.GameObject)player, WindowBB, dt)
 
     if shot_cooldown > 0 do shot_cooldown -= dt
-    
-    // other things?
 }
 
 DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
     using player
+    if destroyed do return
     DrawSprite(renderer,
         sprite,
         lib.GetBoundingBox(cast(^lib.GameObject)player),
@@ -119,6 +126,8 @@ DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
 
 PlayerDestroyed :: proc(player: ^Player) {
     using player
+    
+    if destroyed do return
     destroyed = true
 
     bb := lib.GetBoundingBox(player)
@@ -130,7 +139,8 @@ PlayerDestroyed :: proc(player: ^Player) {
     PlayEffect(.GameOver)
 }
 
-GeneratePlayerProjectiles :: proc(player: ^Player) {
+@(private="file")
+generatePlayerProjectiles :: proc(player: ^Player) {
     using player
 
     // if mulit_shot == 1, we want to shoot balanced from two sides

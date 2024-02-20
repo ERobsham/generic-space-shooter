@@ -42,6 +42,9 @@ main :: proc() {
     game_state := InitGameState(window, renderer)
     defer DestroyGameState(game_state)
 
+    menu := InitMenu(renderer)
+    defer DestroyMenu(menu)
+
     deltaT.Init()
 
     event: sdl2.Event
@@ -50,25 +53,35 @@ main :: proc() {
         // process exit events
         sdl2.PollEvent(&event)
         if event.type == sdl2.EventType.QUIT do return
-
-
-        ProcessKeyboardInput(game_state)
         
-        // process game step
         dt := deltaT.Get()
-        UpdateGameState(game_state, dt)
-
-        // draw the new state
-        ClearRender(renderer)
-        DrawGameState(game_state, renderer)
         
-        // for funzies to see how well mouse tracking works
-        // mX, mY : c.int
-        // sdl2.GetMouseState(&mX, &mY)
-        // DrawRect(renderer, i32(mX), i32(mY))
+        UpdateMenu(menu, &event, dt)
 
-        // DrawSpline(&testSpline, renderer)
-        // DrawSpline(&testSpline2, renderer)
+        if menu.current_menu == .None {
+            ProcessKeyboardInput(game_state)
+        }
+        
+        if menu.current_menu != .Pause &&
+            menu.current_menu != .Main {
+            // process game step
+            UpdateGameState(game_state, dt)
+            if IsGameOver(game_state) do menu.current_menu = .GameOver
+        }
+
+        if menu.current_menu == .Main &&
+            menu.is_transistion {
+            ResetGameState(game_state)
+        }
+        
+        ClearRender(renderer)
+        
+        if menu.current_menu != .Main {
+
+            // draw the new state
+            DrawGameState(game_state, renderer)
+        }
+        DrawMenu(menu, renderer)
 
         // present the scene
         sdl2.RenderPresent(renderer)
@@ -82,53 +95,3 @@ ClearRender :: proc(renderer: ^sdl2.Renderer) {
     sdl2.RenderClear(renderer)
     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
 }
-
-
-// testSplinePoints := []physics2d.Vec2{
-//     {120, -50},
-//     {120, 0},
-//     {80, 220},
-//     {180, 380},
-//     {480, 480},
-//     {660, 340},
-//     {580, 200},
-//     {420, 320},
-//     {320, 220},
-//     {460, 120},
-//     {600, 0},
-//     {600, -50},
-// }
-
-// testSpline := physics2d.NewSpline(testSplinePoints)
-// testSpline2 := physics2d.SplineFlippedHorizontally(&testSpline, f64(space_shooter.W_WIDTH) )
-
-// DrawSpline :: proc(s: ^physics2d.Spline, renderer: ^sdl2.Renderer) {
-//     sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
-
-//     granularity :: 500
-//     spline_len := s->length()
-//     step_size := f64(spline_len) / f64(granularity)
-    
-//     pts := [granularity]sdl2.FPoint {}
-//     for i := 0; i < granularity; i += 1 {
-//         t := f64(i) * step_size
-//         pt := s->pointAt(t)
-//         pts[i].x = f32(pt.x)
-//         pts[i].y = f32(pt.y)
-//     }
-
-//     pt_ptr := &pts
-//     sdl2.RenderDrawLinesF(renderer, cast([^]sdl2.FPoint)pt_ptr, granularity)
-
-//     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
-// }
-
-// helper to draw rect around mouse
-// DrawRect :: proc(renderer: ^sdl2.Renderer, x: i32, y: i32) {
-//     sdl2.SetRenderDrawColor(renderer, 0, 0xFF, 0, 0)
-    
-//     rect := sdl2.Rect{x-10, y-10, 20, 20}
-//     sdl2.RenderDrawRect(renderer, &rect)
-    
-//     sdl2.SetRenderDrawColor(renderer, 0, 0, 0, 0)
-// }
