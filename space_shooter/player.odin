@@ -14,8 +14,8 @@ PLAYER_SPRITE :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
     t_row = 0,
-    t_w = 50,
-    t_h = 57,
+    t_w = 64,
+    t_h = 64,
 }
 
 PLAYER_MOVE_SPEED :: 500.0
@@ -40,7 +40,7 @@ Player :: struct {
 
     processKeyboardInput: proc(self: ^Player, keyboard_state: [^]u8),
 
-    sprite: SpriteInfo,
+    sprite: AnimatedSprite,
     facing: Dir,
     
     shot_cooldown: f64,
@@ -58,7 +58,7 @@ shotOrigin :: struct {
 
 InitPlayer :: proc() -> Player {
     p := Player{
-        sprite = PLAYER_SPRITE,
+        sprite = NewAnimiatedSprite(PLAYER_SPRITE, 3, 1.0/4.0),
         dimensions= { f64(PLAYER_SPRITE.t_w), f64(PLAYER_SPRITE.t_h) },
 
         processKeyboardInput = ProcessPlayerInput,
@@ -110,6 +110,7 @@ UpdatePlayer :: proc(player: ^Player, dt: f64) {
     using player
     if destroyed do return
 
+    sprite->update(dt)
     lib.MoveWithin(cast(^lib.GameObject)player, WindowBB, dt)
 
     if shot_cooldown > 0 do shot_cooldown -= dt
@@ -118,10 +119,7 @@ UpdatePlayer :: proc(player: ^Player, dt: f64) {
 DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
     using player
     if destroyed do return
-    DrawSprite(renderer,
-        sprite,
-        lib.GetBoundingBox(cast(^lib.GameObject)player),
-    )
+    sprite->draw(renderer, lib.GetBoundingBox(cast(^lib.GameObject)player))
 }
 
 PlayerDestroyed :: proc(player: ^Player) {
