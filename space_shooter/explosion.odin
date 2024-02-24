@@ -8,17 +8,18 @@ import "../lib/physics2d"
 EXPLOSION_SPRITE :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
-    t_row = 7,
-    t_w = 34,
-    t_h = 34,
+    t_row = 6,
+    t_w = 64,
+    t_h = 64,
 }
 
-EXPLOSION_SPEED :: 1.0/4.0
-EXPLOSION_STAGES :: 3;
+EXPLOSION_SPEED :: 1.0/8.0
+EXPLOSION_STAGES :: 4;
 
 Explosion :: struct {
     using gObj: lib.GameObject,
-    sprite: AnimatedSprite,
+    sprite_fg: AnimatedSprite,
+    sprite_bg: AnimatedSprite,
 }
 
 // creates a pointer to a 'new' explosion object -- ie, must be freed.
@@ -33,7 +34,9 @@ CreateExplosionPtr :: proc(at: physics2d.Vec2) -> ^Explosion {
     e.dir = VecFor(Dir.Stationary)
     e.speed = 0
 
-    e.sprite = NewAnimiatedSprite(EXPLOSION_SPRITE, EXPLOSION_STAGES, EXPLOSION_SPEED, false)
+    e.sprite_fg = NewAnimiatedSprite(EXPLOSION_SPRITE, EXPLOSION_STAGES, EXPLOSION_SPEED, false)
+    e.sprite_bg = NewAnimiatedSprite(EXPLOSION_SPRITE, EXPLOSION_STAGES, EXPLOSION_SPEED, false)
+    e.sprite_bg.t_row += 1
 
     e.update = proc(self: ^lib.GameObject, dt: f64) {
         UpdateExplosion(cast(^Explosion)self, dt)
@@ -50,9 +53,10 @@ CreateExplosionPtr :: proc(at: physics2d.Vec2) -> ^Explosion {
 UpdateExplosion :: proc(explosion:^Explosion, dt: f64) {
     using explosion
 
-    sprite->update(dt)
+    sprite_fg->update(dt)
+    sprite_bg->update(dt)
 
-    if sprite.current_frame == EXPLOSION_STAGES-1 {
+    if sprite_bg.done {
         destroyed = true
     }
 }
@@ -62,5 +66,7 @@ DrawExplosion :: proc(explosion:^Explosion, renderer: ^sdl2.Renderer) {
     
     if destroyed do return
 
-    sprite->draw(renderer, lib.GetBoundingBox(cast(^lib.GameObject)explosion))
+    bb := lib.GetBoundingBox(cast(^lib.GameObject)explosion)
+    sprite_bg->draw(renderer, bb)
+    sprite_fg->draw(renderer, bb)
 }

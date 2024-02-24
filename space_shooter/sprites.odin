@@ -70,6 +70,7 @@ AnimatedSprite :: struct {
 
     current_frame: i32,
     frame_cd: f64,
+    done: bool,
 
     update: proc(self: ^AnimatedSprite, dt: f64),
     draw: proc(self: ^AnimatedSprite, renderer: ^sdl2.Renderer, bb: physics2d.BoundingBox),
@@ -94,11 +95,17 @@ NewAnimiatedSprite :: proc(sprite: SpriteInfo, num_frames: i32, time_per_frame: 
 @(private="file")
 updateAnimatedSprite :: proc(self: ^AnimatedSprite, dt: f64) {
     using self
+
+    if done { return }
     
     frame_cd -= dt
     if frame_cd < 0 {
         current_frame += 1
         frame_cd = time_per_frame
+
+        if current_frame == num_frames && !loops {
+            done = true
+        }
         
         if loops {
             current_frame = current_frame % num_frames
