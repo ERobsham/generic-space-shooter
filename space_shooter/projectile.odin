@@ -10,8 +10,8 @@ PROJECTILE_SPRITE :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
     t_row = 4,
-    t_w = 3,
-    t_h = 12,
+    t_w = 6,
+    t_h = 21,
 }
 
 PROJECTILE_SPEED :: 600.0
@@ -45,7 +45,20 @@ CreateProjectile :: proc(at: physics2d.Vec2, dir: physics2d.Vec2, is_friendly: b
     }
 
     if !is_friendly {
+        p.sprite.t_col += 3
+    }
+
+    
+    if dir.x < 0 {
         p.sprite.t_col += 1
+    }
+    if dir.x > 0 {
+        p.sprite.t_col += 2
+    }
+
+    if p.sprite.t_col % 3 != 0 {
+        p.sprite.t_w += 5
+        p.dimensions.w += 5
     }
 
     return p

@@ -153,12 +153,13 @@ generatePlayerProjectiles :: proc(player: ^Player) {
         }
         
         // we want more like NNE/NNW, so make some custom adjustments for now.
+        SQRT10 :: 3.162277660168379
         shot_dir := VecFor(shot_origin.dir)
         if shot_dir.x > 0 {
-            shot_dir = { +1/math.SQRT_FIVE, -2/math.SQRT_FIVE }
+            shot_dir = { +1/SQRT10, -3/SQRT10 }
         } 
         else if shot_dir.x < 0 {
-            shot_dir = { -1/math.SQRT_FIVE, -2/math.SQRT_FIVE }
+            shot_dir = { -1/SQRT10, -3/SQRT10 }
         }
 
         proj := CreateProjectile(shot_loc, shot_dir)
