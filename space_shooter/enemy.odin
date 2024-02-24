@@ -10,8 +10,8 @@ ENEMY_SPRITE :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
     t_row = 2,
-    t_w = 48,
-    t_h = 16,
+    t_w = 58,
+    t_h = 30,
 }
 
 ENEMY_MOVE_SPEED     :: 1.0
