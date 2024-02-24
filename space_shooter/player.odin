@@ -24,15 +24,15 @@ PLAYER_ROF        :f64: 4.0 // ie shots per sec
 PLAYER_MULITI_SHOT_MAX :: 9
 
 playerProjOrigins := [PLAYER_MULITI_SHOT_MAX]shotOrigin {
-    { { 25,  0 }, .North }, // tip - top center
+    { { f64(PLAYER_SPRITE.t_w) / 2 ,  0 }, .North }, // tip - top center
     { {  0, 40 }, .North }, // far left - wing tip
-    { { 50, 40 }, .North }, // far right - wing tip
-    { { 15, 10 }, .North }, // offset left - top
-    { { 40, 10 }, .North }, // offset right - top
+    { { f64(PLAYER_SPRITE.t_w), 40 }, .North }, // far right - wing tip
+    { { 20, 10 }, .North }, // offset left - top
+    { { f64(PLAYER_SPRITE.t_w)-20, 10 }, .North }, // offset right - top
     { {  0, 40 }, .NorthWest },
-    { { 50, 40 }, .NorthEast },
-    { { 25,  0 }, .NorthWest },
-    { { 25,  0 }, .NorthEast },
+    { { f64(PLAYER_SPRITE.t_w), 40 }, .NorthEast },
+    { { f64(PLAYER_SPRITE.t_w) / 2,  0 }, .NorthWest },
+    { { f64(PLAYER_SPRITE.t_w) / 2,  0 }, .NorthEast },
 }
 
 Player :: struct {
@@ -142,7 +142,7 @@ generatePlayerProjectiles :: proc(player: ^Player) {
     using player
 
     // if mulit_shot == 1, we want to shoot balanced from two sides
-    offset := u8(multi_shot % 2 == 1 ? 1 : 0)
+    offset := u8(multi_shot % 2)
 
     for i := u8(0 + offset); i <= (multi_shot + offset); i += 1 {
         shot_origin := playerProjOrigins[i]

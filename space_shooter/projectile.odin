@@ -1,5 +1,6 @@
 package space_shooter
 
+import "core:fmt"
 import "vendor:sdl2"
 
 import "../lib"
@@ -44,7 +45,7 @@ CreateProjectile :: proc(at: physics2d.Vec2, dir: physics2d.Vec2, is_friendly: b
     }
 
     if !is_friendly {
-        p.sprite.t_row += 1
+        p.sprite.t_col += 1
     }
 
     return p

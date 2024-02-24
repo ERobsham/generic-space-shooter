@@ -6,26 +6,29 @@ import "vendor:sdl2"
 import "../lib"
 import "../lib/physics2d"
 
+POWERUP_W :: 42
+POWERUP_H :: 42
+
 POWERUP_SPRITE_Multishot :: SpriteInfo {
     ss_idx = 0,
     t_col = 0,
     t_row = 6,
-    t_w = 23,
-    t_h = 11,
+    t_w = POWERUP_W,
+    t_h = POWERUP_H,
 }
 POWERUP_SPRITE_ShotSpeed :: SpriteInfo {
     ss_idx = 0,
     t_col = 1,
     t_row = 6,
-    t_w = 23,
-    t_h = 11,
+    t_w = POWERUP_W,
+    t_h = POWERUP_H,
 }
 POWERUP_SPRITE_RateOfFire :: SpriteInfo {
     ss_idx = 0,
     t_col = 2,
     t_row = 6,
-    t_w = 23,
-    t_h = 11,
+    t_w = POWERUP_W,
+    t_h = POWERUP_H,
 }
 POWERUP_SPEED :: 100.0
 
