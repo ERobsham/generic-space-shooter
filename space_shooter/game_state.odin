@@ -23,6 +23,7 @@ GameState :: struct {
 
     // systems
     enemy_spawner : EnemySpawner,
+    background : Background,
 }
 
 InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameState {
@@ -59,6 +60,7 @@ InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameSt
     s.misc_objs     = make([dynamic]^lib.GameObject, 0, 20)
 
     s.enemy_spawner = NewEnemySpawner(s)
+    s.background    = NewBackground()
 
     return s
 }
@@ -98,6 +100,7 @@ ProcessKeyboardInput :: proc(s: ^GameState) {
 UpdateGameState :: proc(s: ^GameState, dt: f64) {
     using s
     
+    UpdateBackground(&background, dt)
     enemy_spawner->update(dt)
 
     player->update(dt)
@@ -165,6 +168,8 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
 DrawGameState :: proc(s: ^GameState, renderer: ^sdl2.Renderer) {
     using s
     
+    DrawBackground(&background, renderer)
+
     player->draw(renderer)
 
     for &enemy in enemies {
