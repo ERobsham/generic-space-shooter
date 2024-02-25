@@ -4,9 +4,9 @@ import "core:math/rand"
 
 import "../lib/physics2d"
 
-SPAWN_RATE  :: 1.0/5.0
+SPAWN_RATE  :: 1.0/4.0
 
-ENEMIES_PER_WAVE :: 10
+ENEMIES_PER_WAVE :: 15
 WAVE_COOLDOWN   :: 5.0
 
 EnemySpawner :: struct {
