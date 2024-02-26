@@ -42,7 +42,7 @@ main :: proc() {
     game_state := InitGameState(window, renderer)
     defer DestroyGameState(game_state)
 
-    menu := InitMenu(renderer)
+    menu := InitMenu(window, renderer, game_state)
     defer DestroyMenu(menu)
 
     deltaT.Init()
@@ -50,13 +50,16 @@ main :: proc() {
     event: sdl2.Event
     loop: 
     for {
-        // process exit events
-        sdl2.PollEvent(&event)
-        if event.type == sdl2.EventType.QUIT do return
-        
         dt := deltaT.Get()
+        for sdl2.PollEvent(&event) {
+            // process exit events
+            if event.type == sdl2.EventType.QUIT do return
+
+            ProcessEventMenu(menu, &event)
+        }
         
-        UpdateMenu(menu, &event, dt)
+        UpdateMenu(menu, dt)
+        
 
         if menu.current_menu == .None {
             ProcessKeyboardInput(game_state)

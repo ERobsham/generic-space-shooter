@@ -1,27 +1,32 @@
 package space_shooter
 
+import "core:fmt"
 import "vendor:sdl2"
 import "vendor:sdl2/image"
 
+import im "shared:odin-imgui"
+import "shared:odin-imgui/imgui_impl_sdl2"
+import "shared:odin-imgui/imgui_impl_sdlrenderer2"
+
+MENU_FLAGS :: im.WindowFlags{
+    .NoTitleBar,
+    .NoResize,
+    .NoMove,
+    .NoScrollbar,
+    .NoScrollWithMouse,
+    .NoCollapse,
+    .NoBackground,
+    .NoSavedSettings,
+}
+
+HUD_FLAGS  :: MENU_FLAGS | im.WindowFlags{
+    .NoNavInputs,
+    .NoNavFocus,
+    .NoMouseInputs,
+}
+
 BLINK_CD :: 2.0
 IS_BLINKED_CD :: .5
-
-TitleW :: 360
-TitleH :: 106
-
-PauseW :: 153
-PauseH :: 39
-
-GameOverW :: 279
-GameOverH :: 47
-
-PressAnyKeyW :: 123
-PressAnyKeyH :: 23
-
-PressEscKeyW :: 181
-PressEscKeyH :: 18
-
-
 
 Menu :: struct {
     current_menu  : MenuState,
@@ -30,11 +35,12 @@ Menu :: struct {
     blink_cd  : f64,
     is_blinked: bool,
 
-    main_menu_text: ^sdl2.Texture,
-    pause_text: ^sdl2.Texture,
-    game_over_text: ^sdl2.Texture,
-    press_any_key_test: ^sdl2.Texture,
-    press_esc_key_test: ^sdl2.Texture,
+    game_state: ^GameState,
+
+
+    // currently unused...
+    title_font: ^im.Font,
+    menu_font: ^im.Font,
 }
 
 MenuState :: enum {
@@ -44,83 +50,50 @@ MenuState :: enum {
     GameOver,
 }
 
-InitMenu :: proc(renderer: ^sdl2.Renderer) -> ^Menu {
+InitMenu :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer, game_state: ^GameState) -> ^Menu {
+    
+    im.CHECKVERSION()
+	im.CreateContext()
+	io := im.GetIO()
+	io.ConfigFlags += {.NavEnableKeyboard, .NavEnableGamepad}
+    im.StyleColorsDark()
+    
+    
+    fa := io.Fonts
+    menu_font  := im.FontAtlas_AddFontFromFileTTF(fa, "assets/Anta/Anta-Regular.ttf", 32.0)
+    title_font := im.FontAtlas_AddFontFromFileTTF(fa, "assets/Anta/Anta-Regular.ttf", 72.0)
+    im.FontAtlas_Build(fa)
+
+    imgui_impl_sdl2.InitForSDLRenderer(window, renderer)
+	imgui_impl_sdlrenderer2.Init(renderer)
+    
     m := new(Menu)
 
     m.current_menu = .Main
     m.blink_cd = BLINK_CD
     m.is_blinked = false
-    
-    tex := image.LoadTexture(renderer, "assets/MainMenuText.png")
-    assert(tex != nil, "unable to load MainMenu texture")
-    m.main_menu_text = tex
 
-    tex = image.LoadTexture(renderer, "assets/PauseMenuText.png")
-    assert(tex != nil, "unable to load PauseMenu texture")
-    m.pause_text = tex
-    
-    tex = image.LoadTexture(renderer, "assets/GameOverText.png")
-    assert(tex != nil, "unable to load GameOver texture")
-    m.game_over_text = tex
+    m.game_state = game_state
 
-    tex = image.LoadTexture(renderer, "assets/PressAnyKey.png")
-    assert(tex != nil, "unable to load PressAnyKey texture")
-    m.press_any_key_test = tex
-
-    tex = image.LoadTexture(renderer, "assets/PressEscKey.png")
-    assert(tex != nil, "unable to load PressEscKey texture")
-    m.press_esc_key_test = tex
+    m.title_font = title_font
+    m.menu_font  = menu_font
 
     return m
 }
 
 DestroyMenu :: proc(m: ^Menu) {
-
-    sdl2.DestroyTexture(m.main_menu_text)
-    sdl2.DestroyTexture(m.pause_text)
-    sdl2.DestroyTexture(m.game_over_text)
-
     free(m)
+
+	imgui_impl_sdlrenderer2.Shutdown()
+    imgui_impl_sdl2.Shutdown()
+    im.DestroyContext()
 }
 
-UpdateMenu :: proc(m: ^Menu, event: ^sdl2.Event, dt: f64) {
-    m.is_transistion = false
-    init_menu := m.current_menu
-    switch m.current_menu {
-        case .None: {
-            if event.type == sdl2.EventType.KEYUP && 
-                event.key.keysym.scancode == sdl2.SCANCODE_ESCAPE {
-                // immedately pause on `esc` key presses
-                m.current_menu = .Pause
-            }
-        }
-        case .Pause: {
-            if event.type == sdl2.EventType.KEYUP && 
-                event.key.keysym.scancode == sdl2.SCANCODE_ESCAPE {
-                // immedately pause on `esc` key presses
-                m.current_menu = .None
-            }
-        }
-        case .Main: {
-            if event.type == sdl2.EventType.KEYUP ||
-                event.type == sdl2.EventType.MOUSEBUTTONUP {
-                // any button / key up event should start the game
-                m.current_menu = .None
-            }
-        }
-        case .GameOver: {
-            if event.type == sdl2.EventType.KEYUP && 
-            event.key.keysym.scancode == sdl2.SCANCODE_ESCAPE {
-                // any button / key up event should start the game
-                m.current_menu = .Main
-            }
-        }
-    }
+ProcessEventMenu :: proc(m: ^Menu, event: ^sdl2.Event) {
+    imgui_impl_sdl2.ProcessEvent(event)
+}
 
-    if m.current_menu != init_menu {
-        m.is_transistion = true
-        m.blink_cd = BLINK_CD
-    } 
+UpdateMenu :: proc(m: ^Menu, dt: f64) {
     if m.current_menu == .None do return
 
     m.blink_cd -= dt
@@ -131,53 +104,171 @@ UpdateMenu :: proc(m: ^Menu, event: ^sdl2.Event, dt: f64) {
 }
 
 DrawMenu :: proc(m: ^Menu, renderer: ^sdl2.Renderer) {
-    
-    switch m.current_menu {
-        case .None: {
-            return
-        }
-        case .Pause: {
-            // draw a pause overlay
-            drawMenuCentered(renderer, m.pause_text, PauseW, PauseH)
+    imgui_impl_sdlrenderer2.NewFrame()
+    imgui_impl_sdl2.NewFrame()
+    im.NewFrame()
+
+    drawHUD(m)
+    drawMainMenu(m)
+    drawPause(m)
+    drawGameOver(m)
+
+    im.Render()
+    imgui_impl_sdlrenderer2.RenderDrawData(im.GetDrawData())
+}
+
+drawMainMenu :: proc(m: ^Menu) {
+    if m.current_menu != .Main do return
+
+    im.Begin("main_menu", nil, MENU_FLAGS) 
+    {
+        im.SetWindowPos(im.Vec2{0,0})
+        im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
+        
+        im.SetCursorPosY(200)
+        
+        im.PushFont(m.title_font)
+        {
+            Title1 :: "Generic"
+            Title2 :: "Space Shooter"
+
+            alignPosFor(Title1)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title1)
             
-            if (!m.is_blinked) {
-                drawMenuCentered(renderer, m.press_esc_key_test, PressEscKeyW, PressEscKeyH, 1.5)
-            }
+            alignPosFor(Title2)
+            im.TextColored({1.0,0.0,0.0,1.0}, Title2)
         }
-        case .Main: {
-            // draw a 'main menu' screen
-            drawMenuCentered(renderer, m.main_menu_text, TitleW, TitleH)
+        im.PopFont()
 
-            if (!m.is_blinked) {
-                drawMenuCentered(renderer, m.press_any_key_test, PressAnyKeyW, PressAnyKeyH, 1.5)
+        cur_y := im.GetCursorPosY()
+        im.SetCursorPosY(cur_y+100)
+        
+        im.PushStyleColorImVec4(.Button, {0.0, 0.0, 0.0, 0.0})
+        im.PushStyleColorImVec4(.ButtonHovered, {1.0, 0.0, 0.0, 0.5})
+        im.PushStyleColorImVec4(.ButtonActive, {1.0, 0.0, 0.0, 0.9})
+        im.PushFont(m.menu_font)
+        {
+            StartButton :: "Start"
+            alignPosFor(StartButton)
+            if im.IsWindowAppearing() do im.SetKeyboardFocusHere()
+            if im.Button(StartButton) {
+                fmt.println(StartButton)
+                m.current_menu = .None
+            }
+            im.SetItemDefaultFocus()
+            
+            HighScores  :: "Highscores"
+            alignPosFor(HighScores)
+            if im.Button(HighScores) {
+                fmt.println(HighScores)
+            }
+            
+            QuitButton  :: "Quit"
+            alignPosFor(QuitButton)
+            if im.Button(QuitButton) {
+                fmt.println(QuitButton)
+                e := sdl2.Event{type = .QUIT}
+                sdl2.PushEvent(&e)
             }
         }
-        case .GameOver: {
-            // draw a 'game over' screen
-            drawMenuCentered(renderer, m.game_over_text, GameOverW, GameOverH)
+        im.PopStyleColor(3)
+        im.PopFont()
 
-            if (!m.is_blinked) {
-                drawMenuCentered(renderer, m.press_esc_key_test, PressEscKeyW, PressEscKeyH, 1.5)
-            }
-        }
     }
+    im.End()
+    
+}
+
+drawHUD :: proc(m: ^Menu) {
+    score_w :: f32(W_WIDTH)
+    score_h :: f32(W_HEIGHT*0.2)
+
+    if m.current_menu == .Main do return
+
+    im.Begin("score_hud", nil, HUD_FLAGS) 
+    {
+        im.SetWindowPos(im.Vec2{0,0})
+        im.SetWindowSize(im.Vec2{score_w,score_h})
+
+        alignPosFor("000000000000")
+        im.TextColored({1.0,0.9,0.5,1.0},"%012d", m.game_state.score)
+    }
+    im.End()
+
+    // more hud elements?
 }
 
 @(private="file")
-drawMenuCentered :: proc(renderer: ^sdl2.Renderer, texture: ^sdl2.Texture, w: i32, h:i32, y_offset: f64 = 0.5) {
-    center := WindowBB->getCenter()
-    
-    
-    x := i32(center.x - f64(w / 2))
-    y := i32((center.y * y_offset) - f64(h / 2))
-    src := sdl2.Rect{ 
-        0, 0,
-        w, h,
+drawPause :: proc(m: ^Menu) {
+    if m.current_menu == .None &&
+        (im.IsKeyReleased(.Escape) || im.IsKeyReleased(.GamepadStart)) {
+        fmt.println("Pause")
+        m.current_menu = .Pause
     }
-    dest := sdl2.Rect{ 
-        x, y,
-        w, h,
+    else if m.current_menu == .Pause &&
+        (im.IsKeyReleased(.Escape) || im.IsKeyReleased(.GamepadStart) || 
+        im.IsKeyReleased(.Enter) || im.IsKeyReleased(.GamepadFaceDown) ||
+        im.IsKeyReleased(.Space) || im.IsKeyReleased(.GamepadR1)) {
+        fmt.println("Unpause")
+        m.current_menu = .None
     }
 
-    sdl2.RenderCopy(renderer, texture, &src, &dest)
+    if m.current_menu != .Pause do return
+
+    im.Begin("pause_overlay", nil, HUD_FLAGS) 
+    {
+        im.SetWindowPos(im.Vec2{0,0})
+        im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
+
+        im.SetCursorPosY(300)
+
+        im.PushFont(m.title_font)
+        {
+            Title :: "Pause"
+            alignPosFor(Title)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        }
+        im.PopFont()
+    }
+    im.End()
+}
+
+@(private="file")
+drawGameOver :: proc(m: ^Menu) {
+    if m.current_menu != .GameOver do return
+
+    if im.IsKeyReleased(.Escape) || im.IsKeyReleased(.GamepadStart) || 
+        im.IsKeyReleased(.Enter) || im.IsKeyReleased(.GamepadFaceDown) {
+        fmt.println("Back to Main Menu")
+        ResetGameState(m.game_state)
+        m.current_menu = .Main
+        return
+    }
+
+    im.Begin("game_over_overlay", nil, HUD_FLAGS) 
+    {
+        im.SetWindowPos(im.Vec2{0,0})
+        im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
+
+        im.SetCursorPosY(300)
+
+        im.PushFont(m.title_font)
+        {
+            Title :: "Game Over"
+            alignPosFor(Title)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        }
+        im.PopFont()
+    }
+    im.End()
+}
+
+@(private="file")
+alignPosFor :: proc(str: cstring, alignment: f32 = 0.5) {
+    style := im.GetStyle();
+    size  := im.CalcTextSize(str).x + style.FramePadding.x * 2.0;
+    avail := im.GetContentRegionAvail().x;
+
+    offset := (avail - size) * alignment;
+    if offset > 0.0 do im.SetCursorPosX(im.GetCursorPosX() + offset);
 }
