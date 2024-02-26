@@ -164,7 +164,7 @@ drawMainMenu :: proc(m: ^Menu) {
 }
 
 drawHUD :: proc(m: ^Menu) {
-    score_w :: f32(W_WIDTH*0.1)
+    score_w :: f32(W_WIDTH)
     score_h :: f32(W_HEIGHT*0.2)
 
     if m.current_menu == .Main do return
@@ -173,7 +173,11 @@ drawHUD :: proc(m: ^Menu) {
     {
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{score_w,score_h})
+        
+        im.SetWindowFontScale(2.0)
+        defer im.SetWindowFontScale(1.0)
 
+        alignPosFor("000000000000")
         im.TextColored({1.0,0.9,0.5,1.0},"%012d", m.game_state.score)
     }
     im.End()
@@ -220,8 +224,7 @@ drawGameOver :: proc(m: ^Menu) {
     if m.current_menu != .GameOver do return
 
     if im.IsKeyReleased(.Escape) || im.IsKeyReleased(.GamepadStart) || 
-        im.IsKeyReleased(.Enter) || im.IsKeyReleased(.GamepadFaceDown) ||
-        im.IsKeyReleased(.Space) || im.IsKeyReleased(.GamepadR1) {
+        im.IsKeyReleased(.Enter) || im.IsKeyReleased(.GamepadFaceDown) {
         fmt.println("Back to Main Menu")
         ResetGameState(m.game_state)
         m.current_menu = .Main
