@@ -7,6 +7,7 @@ Have been hearing bits about `Odin` recently, and always wanted to try my hand a
 
 Planning on exclusively using Odin's `core` and `vendor:SDL2` libraries (plus a couple terrible homebrew sprites) to build a game from scratch.
 
+*Update:*  Adding one more dependency: `ImGUI` (see `https://gitlab.com/L-4/odin-imgui/` for the odin specific bindings).  When I started looking into rendering text (fonts) and managing GUI stacks, I found all kinds of info pointing at `ImGUI` as more or less a gold standard for game UIs (from indie to AAA, tooling and more). So I figured the fact it is so widely used, seems like compelling argument for giving it a try, and getting some experience with how it works.
 
 
 ## Trying it yourself:
@@ -18,8 +19,15 @@ I'm developing on macos, so directions are specifically for macos users, however
  * Install SDL2:
     * `brew install sdl2`
     * `brew install sdl2_image` (PNG support)
+* setup odin bindings for ImGUI:
+    * checkout and build ImGUI
+        * checkout: `git clone https://gitlab.com/L-4/odin-imgui.git`
+        * modify `build.py` to just use our SDL2 backend (set `wanted_backends = ["sdl2", "sdlrenderer2"]`)
+        * install the `ply` dependency `python3 -m pip install ply`
+        * build:  `python3 ./build.py`
+    * symlink into your `Odin/shared` library directory (`ln -s your/path/to/odin-imgui your/path/to/Odin/shared/odin-imgui`)
 * Clone this repo `git clone https://github.com/ERobsham/generic-space-shooter.git`
-* Run the game! (from root level of the repo)
+* Run the game! (from root level of this repo)
     * `odin run .`
 
 

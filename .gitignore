@@ -1,6 +1,10 @@
-
+## misc env clutter
 .DS_Store
 .vscode
 ols.json
 
+## binary
 generic-space-shooter
+
+## imgui state
+*.ini
