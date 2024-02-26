@@ -39,6 +39,7 @@ Menu :: struct {
 
 
     // currently unused...
+    title_font: ^im.Font,
     menu_font: ^im.Font,
 }
 
@@ -55,8 +56,13 @@ InitMenu :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer, game_state: ^Ga
 	im.CreateContext()
 	io := im.GetIO()
 	io.ConfigFlags += {.NavEnableKeyboard, .NavEnableGamepad}
-
     im.StyleColorsDark()
+    
+    
+    fa := io.Fonts
+    menu_font  := im.FontAtlas_AddFontFromFileTTF(fa, "assets/Anta/Anta-Regular.ttf", 32.0)
+    title_font := im.FontAtlas_AddFontFromFileTTF(fa, "assets/Anta/Anta-Regular.ttf", 72.0)
+    im.FontAtlas_Build(fa)
 
     imgui_impl_sdl2.InitForSDLRenderer(window, renderer)
 	imgui_impl_sdlrenderer2.Init(renderer)
@@ -68,6 +74,9 @@ InitMenu :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer, game_state: ^Ga
     m.is_blinked = false
 
     m.game_state = game_state
+
+    m.title_font = title_font
+    m.menu_font  = menu_font
 
     return m
 }
@@ -115,49 +124,56 @@ drawMainMenu :: proc(m: ^Menu) {
     {
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
-        im.SetWindowFontScale(4.0)
-        defer im.SetWindowFontScale(1.0)
         
         im.SetCursorPosY(200)
         
-        Title1 :: "Generic"
-        Title2 :: "Space Shooter"
-        alignPosFor(Title1)
-        im.TextColored({1.0,1.0,1.0,1.0}, Title1)
-        alignPosFor(Title2)
-        im.TextColored({1.0,0.0,0.0,1.0}, Title2)
+        im.PushFont(m.title_font)
+        {
+            Title1 :: "Generic"
+            Title2 :: "Space Shooter"
+
+            alignPosFor(Title1)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title1)
+            
+            alignPosFor(Title2)
+            im.TextColored({1.0,0.0,0.0,1.0}, Title2)
+        }
+        im.PopFont()
 
         cur_y := im.GetCursorPosY()
         im.SetCursorPosY(cur_y+100)
         
-
-        im.SetWindowFontScale(2.0)
         im.PushStyleColorImVec4(.Button, {0.0, 0.0, 0.0, 0.0})
         im.PushStyleColorImVec4(.ButtonHovered, {1.0, 0.0, 0.0, 0.5})
         im.PushStyleColorImVec4(.ButtonActive, {1.0, 0.0, 0.0, 0.9})
-        defer im.PopStyleColor(3)
+        im.PushFont(m.menu_font)
+        {
+            StartButton :: "Start"
+            alignPosFor(StartButton)
+            if im.IsWindowAppearing() do im.SetKeyboardFocusHere()
+            if im.Button(StartButton) {
+                fmt.println(StartButton)
+                m.current_menu = .None
+            }
+            im.SetItemDefaultFocus()
+            
+            HighScores  :: "Highscores"
+            alignPosFor(HighScores)
+            if im.Button(HighScores) {
+                fmt.println(HighScores)
+            }
+            
+            QuitButton  :: "Quit"
+            alignPosFor(QuitButton)
+            if im.Button(QuitButton) {
+                fmt.println(QuitButton)
+                e := sdl2.Event{type = .QUIT}
+                sdl2.PushEvent(&e)
+            }
+        }
+        im.PopStyleColor(3)
+        im.PopFont()
 
-        
-        StartButton :: "Start"
-        alignPosFor(StartButton)
-        if im.Button(StartButton) {
-            fmt.println(StartButton)
-            m.current_menu = .None
-        }
-        
-        HighScores  :: "Highscores"
-        alignPosFor(HighScores)
-        if im.Button(HighScores) {
-            fmt.println(HighScores)
-        }
-        
-        QuitButton  :: "Quit"
-        alignPosFor(QuitButton)
-        if im.Button(QuitButton) {
-            fmt.println(QuitButton)
-            e := sdl2.Event{type = .QUIT}
-            sdl2.PushEvent(&e)
-        }
     }
     im.End()
     
@@ -173,9 +189,6 @@ drawHUD :: proc(m: ^Menu) {
     {
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{score_w,score_h})
-        
-        im.SetWindowFontScale(2.0)
-        defer im.SetWindowFontScale(1.0)
 
         alignPosFor("000000000000")
         im.TextColored({1.0,0.9,0.5,1.0},"%012d", m.game_state.score)
@@ -204,17 +217,18 @@ drawPause :: proc(m: ^Menu) {
 
     im.Begin("pause_overlay", nil, HUD_FLAGS) 
     {
-        im.SetWindowFontScale(4.0)
-        defer im.SetWindowFontScale(1.0)
-
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
 
         im.SetCursorPosY(300)
 
-        Title :: "Pause"
-        alignPosFor(Title)
-        im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        im.PushFont(m.title_font)
+        {
+            Title :: "Pause"
+            alignPosFor(Title)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        }
+        im.PopFont()
     }
     im.End()
 }
@@ -233,17 +247,18 @@ drawGameOver :: proc(m: ^Menu) {
 
     im.Begin("game_over_overlay", nil, HUD_FLAGS) 
     {
-        im.SetWindowFontScale(4.0)
-        defer im.SetWindowFontScale(1.0)
-
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{W_WIDTH,W_HEIGHT})
 
         im.SetCursorPosY(300)
 
-        Title :: "Game Over"
-        alignPosFor(Title)
-        im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        im.PushFont(m.title_font)
+        {
+            Title :: "Game Over"
+            alignPosFor(Title)
+            im.TextColored({1.0,1.0,1.0,1.0}, Title)
+        }
+        im.PopFont()
     }
     im.End()
 }
