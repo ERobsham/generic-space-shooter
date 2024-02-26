@@ -169,13 +169,12 @@ drawHUD :: proc(m: ^Menu) {
 
     if m.current_menu == .Main do return
 
-    score := 3001
     im.Begin("score_hud", nil, HUD_FLAGS) 
     {
         im.SetWindowPos(im.Vec2{0,0})
         im.SetWindowSize(im.Vec2{score_w,score_h})
 
-        im.TextColored({1.0,0.9,0.5,1.0},"%012d", score)
+        im.TextColored({1.0,0.9,0.5,1.0},"%012d", m.game_state.score)
     }
     im.End()
 

@@ -24,6 +24,9 @@ GameState :: struct {
     // systems
     enemy_spawner : EnemySpawner,
     background : Background,
+
+    //
+    score : u64,
 }
 
 InitGameState :: proc(window: ^sdl2.Window, renderer: ^sdl2.Renderer) -> ^GameState {
@@ -77,6 +80,8 @@ ResetGameState :: proc(s:^GameState) {
         free(s.misc_objs[len(s.misc_objs) - 1])
         pop(&s.powerups)
     }
+
+    s.score = 0
 }
 
 DestroyGameState :: proc(s: ^GameState) {
@@ -132,6 +137,8 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
 
                 if proj_bb->isColliding(enemy_bb) {
                     proj.destroyed = true
+                    
+                    score += 10 + (enemy_spawner.wave)
                     EnemeyDestroyed(&enemy)
                     maybeSpawnPowerup(s, &enemy_bb)
                     break
@@ -154,7 +161,7 @@ UpdateGameState :: proc(s: ^GameState, dt: f64) {
         powerup_bb := lib.GetBoundingBox(&powerup)
         if powerup_bb->isColliding(player_bb) {
             powerup.destroyed = true
-            // TODO: power up player
+            score += 50
             ApplyPowerupToPlayer(&player, powerup.type)
             break
         }
