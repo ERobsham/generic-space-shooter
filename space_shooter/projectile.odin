@@ -26,7 +26,7 @@ Projectile :: struct {
 
 CreateProjectile :: proc(at: physics2d.Vec2, dir: physics2d.Vec2, is_friendly: bool = true) -> Projectile {
     p := Projectile{
-        loc = at,
+        loc        = { at.x - (f64(PROJECTILE_SPRITE.t_w) / 2), at.y },
         dimensions = { f64(PROJECTILE_SPRITE.t_w), f64(PROJECTILE_SPRITE.t_h) },
         
         dir = dir,

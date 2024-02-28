@@ -19,11 +19,16 @@ PLAYER_SPRITE :: SpriteInfo {
 }
 
 PLAYER_MOVE_SPEED :: 500.0
-PLAYER_ROF        :f64: 4.0 // ie shots per sec
+PLAYER_ROF        :: 4.0 // ie shots per sec
 
-PLAYER_MULITI_SHOT_MAX :: 9
+PLAYER_MULITISHOT_MIN :: 0
+PLAYER_MULITISHOT_MAX :: 9
+PLAYER_SHOTSPEED_MIN  :: 1.0
+PLAYER_SHOTSPEED_MAX  :: 3.0
+PLAYER_ROF_MIN        :: 1.0
+PLAYER_ROF_MAX        :: 5.0
 
-playerProjOrigins := [PLAYER_MULITI_SHOT_MAX]shotOrigin {
+playerProjOrigins := [PLAYER_MULITISHOT_MAX]shotOrigin {
     { { f64(PLAYER_SPRITE.t_w) / 2 ,  0 }, .North }, // tip - top center
     { {  0, 40 }, .North }, // far left - wing tip
     { { f64(PLAYER_SPRITE.t_w), 40 }, .North }, // far right - wing tip
@@ -135,6 +140,32 @@ PlayerDestroyed :: proc(player: ^Player) {
     (cast(^SpaceShooterAPI)api)->addMisc(expl)
 
     PlayEffect(.GameOver)
+}
+
+ApplyPowerupToPlayer :: proc(player: ^Player, powerup: PowerupType) {
+    if player.destroyed do return
+    
+    switch powerup {
+        case .Multishot: {
+            if player.multi_shot == 0 {
+                player.multi_shot += 1
+            }
+            else {
+                player.multi_shot = 
+                    clamp(player.multi_shot + 2, PLAYER_MULITISHOT_MIN, PLAYER_MULITISHOT_MAX-1)
+            }
+        }
+        case .ShotSpeed: {
+            player.shot_speed_mod =
+                clamp(player.shot_speed_mod + 0.2, PLAYER_SHOTSPEED_MIN, PLAYER_SHOTSPEED_MAX)
+        }
+        case .RateOfFire: {
+            player.rof_mod =
+                clamp(player.rof_mod + 0.2, PLAYER_ROF_MIN, PLAYER_ROF_MAX)
+        }
+    }
+
+    PlayEffect(.Powerup)
 }
 
 @(private="file")

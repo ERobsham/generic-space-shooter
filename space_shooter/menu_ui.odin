@@ -1,6 +1,7 @@
 package space_shooter
 
 import "core:fmt"
+import "core:math"
 import "vendor:sdl2"
 import "vendor:sdl2/image"
 
@@ -117,6 +118,7 @@ DrawMenu :: proc(m: ^Menu, renderer: ^sdl2.Renderer) {
     imgui_impl_sdlrenderer2.RenderDrawData(im.GetDrawData())
 }
 
+@(private="file")
 drawMainMenu :: proc(m: ^Menu) {
     if m.current_menu != .Main do return
 
@@ -179,6 +181,7 @@ drawMainMenu :: proc(m: ^Menu) {
     
 }
 
+@(private="file")
 drawHUD :: proc(m: ^Menu) {
     score_w :: f32(W_WIDTH)
     score_h :: f32(W_HEIGHT*0.2)
@@ -187,11 +190,33 @@ drawHUD :: proc(m: ^Menu) {
 
     im.Begin("score_hud", nil, HUD_FLAGS) 
     {
-        im.SetWindowPos(im.Vec2{0,0})
-        im.SetWindowSize(im.Vec2{score_w,score_h})
+        im.SetWindowPos({0,0})
+        im.SetWindowSize({score_w,score_h})
 
         alignPosFor("000000000000")
         im.TextColored({1.0,0.9,0.5,1.0},"%012d", m.game_state.score)
+    }
+    im.End()
+
+    im.Begin("powerup_hud", nil, HUD_FLAGS) 
+    {
+        im.SetWindowFontScale(.5)
+        
+        lineHeight := im.GetTextLineHeightWithSpacing()
+        im.SetWindowPos({0, 0})
+        im.SetWindowSize({score_w * .2, W_HEIGHT})
+
+        im.SetCursorPosY(W_HEIGHT - (lineHeight * 3.125))
+        
+        
+        frac := f32(m.game_state.player.multi_shot) / f32(PLAYER_MULITISHOT_MAX-1)
+        progressBar(frac, fmt.ctprintf("Multishot: %d", m.game_state.player.multi_shot))
+
+        frac = f32(m.game_state.player.shot_speed_mod-1) / f32(PLAYER_SHOTSPEED_MAX-1)
+        progressBar(frac, fmt.ctprintf("Shotspeed: %0.2f", m.game_state.player.shot_speed_mod))
+        
+        frac = f32(m.game_state.player.rof_mod-1) / f32(PLAYER_ROF_MAX-1)
+        progressBar(frac, fmt.ctprintf("RateOfFire: %0.2f", m.game_state.player.rof_mod))
     }
     im.End()
 
@@ -271,4 +296,36 @@ alignPosFor :: proc(str: cstring, alignment: f32 = 0.5) {
 
     offset := (avail - size) * alignment;
     if offset > 0.0 do im.SetCursorPosX(im.GetCursorPosX() + offset);
+}
+
+// auto-fills container, and displays overlay on top of the  
+@(private="file")
+progressBar :: proc(fraction: f32, overlay: cstring) {
+
+    style := im.GetStyle()
+    // containerMin := im.GetContentRegionAvail()
+    containerMax := im.GetContentRegionMax()
+    lineHeight := im.GetTextLineHeightWithSpacing()
+    cursorPos := im.GetCursorPos()
+    padding := style.FramePadding.y
+    
+
+    sizeMin := [2]f32{ cursorPos.x, cursorPos.y }
+    sizeMax := [2]f32{ sizeMin.x + containerMax.x - padding, sizeMin.y + lineHeight - padding }
+
+    // Render
+
+    
+    // bg
+    bg := im.GetBackgroundDrawList()
+    im.DrawList_AddRectFilled(bg, sizeMin, sizeMax, im.GetColorU32(im.Col.FrameBg))
+    im.DrawList_AddText(bg, {sizeMin.x + padding, sizeMin.y}, im.GetColorU32(im.Col.Text), overlay)
+    
+
+    fract_x := math.lerp(sizeMin.x, sizeMax.x, fraction)
+    // fg
+    fg := im.GetForegroundDrawList()
+    im.DrawList_AddRect(fg, sizeMin, {fract_x, sizeMax.y} , im.GetColorU32(im.Col.PlotHistogram))
+    
+    im.SetCursorPosY(cursorPos.y + lineHeight)
 }

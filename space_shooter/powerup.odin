@@ -107,27 +107,3 @@ DrawPowerup :: proc(powerup:^Powerup, renderer: ^sdl2.Renderer) {
         lib.GetBoundingBox(cast(^lib.GameObject)powerup),
     )
 }
-
-ApplyPowerupToPlayer :: proc(player: ^Player, powerup: PowerupType) {
-    switch powerup {
-        case .Multishot: {
-            if player.multi_shot == 0 {
-                player.multi_shot += 1
-            }
-            else {
-                player.multi_shot = 
-                    clamp(player.multi_shot + 2, 0, PLAYER_MULITI_SHOT_MAX-1)
-            }
-        }
-        case .ShotSpeed: {
-            player.shot_speed_mod =
-                clamp(player.shot_speed_mod + 0.2, 1.0, 3.0)
-        }
-        case .RateOfFire: {
-            player.rof_mod =
-                clamp(player.rof_mod + 0.2, 1.0, 5.0)
-        }
-    }
-
-    PlayEffect(.Powerup)
-}
