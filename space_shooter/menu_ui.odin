@@ -187,6 +187,7 @@ drawHUD :: proc(m: ^Menu) {
     score_h :: f32(W_HEIGHT*0.2)
 
     if m.current_menu == .Main do return
+    style := im.GetStyle()
 
     im.Begin("score_hud", nil, HUD_FLAGS) 
     {
@@ -201,6 +202,7 @@ drawHUD :: proc(m: ^Menu) {
     im.Begin("powerup_hud", nil, HUD_FLAGS) 
     {
         im.SetWindowFontScale(.5)
+        defer im.SetWindowFontScale(1.0)
         
         lineHeight := im.GetTextLineHeightWithSpacing()
         im.SetWindowPos({0, 0})
@@ -213,10 +215,28 @@ drawHUD :: proc(m: ^Menu) {
         progressBar(frac, fmt.ctprintf("Multishot: %d", m.game_state.player.multi_shot))
 
         frac = f32(m.game_state.player.shot_speed_mod-1) / f32(PLAYER_SHOTSPEED_MAX-1)
-        progressBar(frac, fmt.ctprintf("Shotspeed: %0.2f", m.game_state.player.shot_speed_mod))
+        progressBar(frac, fmt.ctprintf("ProjSpeed: %0.2f", m.game_state.player.shot_speed_mod))
         
         frac = f32(m.game_state.player.rof_mod-1) / f32(PLAYER_ROF_MAX-1)
         progressBar(frac, fmt.ctprintf("RateOfFire: %0.2f", m.game_state.player.rof_mod))
+    }
+    im.End()
+
+    lineHeight := im.GetTextLineHeightWithSpacing()
+    im.SetNextWindowSize({f32(m.game_state.player.dimensions.w) + style.FramePadding.x*2, lineHeight})
+    im.Begin("energy_hud", nil, HUD_FLAGS) 
+    {
+        im.SetWindowFontScale(.5)
+        defer im.SetWindowFontScale(1.0)
+        
+        // lineHeight := im.GetTextLineHeightWithSpacing()
+        im.SetCursorScreenPos({
+            f32(m.game_state.player.loc.x + m.game_state.player.dimensions.w) - style.FramePadding.x, 
+            f32(m.game_state.player.loc.y + (m.game_state.player.dimensions.h * 2)),
+        })
+        
+        frac := f32(m.game_state.player.energy) / f32(m.game_state.player.energy_max)
+        progressBar(frac, fmt.ctprintf("%04.2f", m.game_state.player.energy))
     }
     im.End()
 

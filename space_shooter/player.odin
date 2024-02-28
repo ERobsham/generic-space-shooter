@@ -28,6 +28,14 @@ PLAYER_SHOTSPEED_MAX  :: 3.0
 PLAYER_ROF_MIN        :: 1.0
 PLAYER_ROF_MAX        :: 5.0
 
+PLAYER_DAMAGE_DEFAULT     :: 10.0
+PLAYER_ENERGY_MAX_DEFAULT :: 100.0
+
+PLAYER_ENERGY_REGEN_RATE_DEFAULT :: 100.0
+PLAYER_ENERGY_REGEN_RATE_MAX     :: 1000.0
+
+PLAYER_PROJ_COST :: 10.0
+
 playerProjOrigins := [PLAYER_MULITISHOT_MAX]shotOrigin {
     { { f64(PLAYER_SPRITE.t_w) / 2 ,  0 }, .North }, // tip - top center
     { {  0, 40 }, .North }, // far left - wing tip
@@ -51,9 +59,16 @@ Player :: struct {
     shot_cooldown: f64,
     rof_mod      : f64,
 
-    multi_shot    : u8,
-    punch_through : u8,
-    shot_speed_mod: f64,
+    multi_shot      : u8,
+    punch_through   : u8,
+    shot_speed_mod  : f64,
+    laser_efficiency: f64,
+
+    damage: f64,
+
+    energy    : f64,
+    energy_max: f64,
+    energy_regen_rate: f64,
 }
 
 shotOrigin :: struct {
@@ -88,11 +103,18 @@ ResetPlayer :: proc(p:^Player) {
     p.speed  = PLAYER_MOVE_SPEED
     p.facing = Dir.North
 
-    p.shot_cooldown  = 0
-    p.rof_mod        = 1.0
-    p.multi_shot     = 0
-    p.punch_through  = 0
-    p.shot_speed_mod = 1.0
+    p.shot_cooldown    = 0
+    p.rof_mod          = 1.0
+    p.multi_shot       = 0
+    p.punch_through    = 0
+    p.shot_speed_mod   = 1.0
+    p.laser_efficiency = 1.0
+
+    p.damage = PLAYER_DAMAGE_DEFAULT
+    
+    p.energy            = 0
+    p.energy_max        = PLAYER_ENERGY_MAX_DEFAULT
+    p.energy_regen_rate = PLAYER_ENERGY_REGEN_RATE_DEFAULT
 }
 
 ProcessPlayerInput :: proc(player: ^Player, keyboard_state: [^]u8) {
@@ -119,6 +141,10 @@ UpdatePlayer :: proc(player: ^Player, dt: f64) {
     lib.MoveWithin(cast(^lib.GameObject)player, WindowBB, dt)
 
     if shot_cooldown > 0 do shot_cooldown -= dt
+
+    if energy < energy_max {
+        energy = clamp(energy+(energy_regen_rate*dt), 0.0, energy_max)
+    }
 }
 
 DrawPlayer :: proc(player: ^Player, renderer: ^sdl2.Renderer) {
@@ -147,13 +173,8 @@ ApplyPowerupToPlayer :: proc(player: ^Player, powerup: PowerupType) {
     
     switch powerup {
         case .Multishot: {
-            if player.multi_shot == 0 {
-                player.multi_shot += 1
-            }
-            else {
-                player.multi_shot = 
-                    clamp(player.multi_shot + 2, PLAYER_MULITISHOT_MIN, PLAYER_MULITISHOT_MAX-1)
-            }
+            player.multi_shot = 
+                clamp(player.multi_shot + 1, PLAYER_MULITISHOT_MIN, PLAYER_MULITISHOT_MAX-1)
         }
         case .ShotSpeed: {
             player.shot_speed_mod =
@@ -175,7 +196,11 @@ generatePlayerProjectiles :: proc(player: ^Player) {
     // if mulit_shot == 1, we want to shoot balanced from two sides
     offset := u8(multi_shot % 2)
 
+    proj_cost := (PLAYER_PROJ_COST * ( 1.0 / laser_efficiency ))
+
     for i := u8(0 + offset); i <= (multi_shot + offset); i += 1 {
+        if energy < proj_cost do return
+
         shot_origin := playerProjOrigins[i]
         
         shot_loc := physics2d.Vec2 {
@@ -192,6 +217,8 @@ generatePlayerProjectiles :: proc(player: ^Player) {
         else if shot_dir.x < 0 {
             shot_dir = { -1/SQRT10, -3/SQRT10 }
         }
+
+        energy -= proj_cost
 
         proj := CreateProjectile(shot_loc, shot_dir)
         proj.speed = u32(f64(proj.speed) * shot_speed_mod)
